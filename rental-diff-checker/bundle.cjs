@@ -24,7 +24,7 @@ jsFiles.forEach(f => {
   html = html.replace(re, () => '<script type="module">' + js + '</script>');
 });
 
-const outPath = path.join(__dirname, '..', '렌탈료_비교분석기.html');
+const outPath = path.join(__dirname, '..', 'rental-checker.html');
 fs.writeFileSync(outPath, html, 'utf8');
 const size = Math.round(fs.statSync(outPath).size / 1024);
 
