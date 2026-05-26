@@ -171,6 +171,71 @@ export function generateCmsRows(
   return { rows, unmatched };
 }
 
+// ── GPT 변환 (CMS 형식 → 비교 분석 입력 형식) ──────────────────────────────
+
+export const GPT_COLUMNS = [
+  '제품코드', '상품명', '모델명', '렌탈기간', '렌탈료',
+  '제품그룹', '관리방법', '브랜드', '일반판매가',
+  '접수여부', '조리수체크', '제품설명', '세부구분',
+] as const;
+
+export type GptRow = { [K in (typeof GPT_COLUMNS)[number]]: string };
+
+export function convertCmsToGpt(
+  cmsRows: Record<string, unknown>[],
+  cols: ReturnType<typeof detectCmsCols>
+): GptRow[] {
+  return cmsRows
+    .filter((row) => {
+      // skip completely empty rows
+      const model = String(row[cols.모델명] ?? '').trim();
+      const period = String(row[cols.의무기간] ?? '').trim();
+      return model !== '' || period !== '';
+    })
+    .map((row) => ({
+      제품코드: String(row[cols.제품코드] ?? ''),
+      상품명: String(row[cols.제품명] ?? ''),
+      모델명: String(row[cols.모델명] ?? ''),
+      렌탈기간: String(row[cols.의무기간] ?? ''),
+      렌탈료: String(row[cols.렌탈가] ?? ''),
+      제품그룹: normalizeGroupCode(String(row[cols.제품그룹] ?? '')),
+      관리방법: String(row[cols.관리방법] ?? ''),
+      브랜드: String(row[cols.브랜드] ?? ''),
+      일반판매가: String(row[cols.일반판매가] ?? ''),
+      접수여부: String(row[cols.접수여부] ?? ''),
+      조리수체크: String(row[cols.조리수체크] ?? ''),
+      제품설명: String(row[cols.제품설명] ?? ''),
+      세부구분: '',
+    }));
+}
+
+export function exportGptExcel(rows: GptRow[]): void {
+  const aoa: unknown[][] = [GPT_COLUMNS as unknown as unknown[]];
+  rows.forEach((r) => aoa.push(GPT_COLUMNS.map((c) => r[c])));
+
+  const ws = XLSXStyle.utils.aoa_to_sheet(aoa) as Record<string, XlsxCell>;
+
+  GPT_COLUMNS.forEach((_, ci) => {
+    const addr = XLSXStyle.utils.encode_cell({ r: 0, c: ci });
+    if (!ws[addr]) return;
+    ws[addr].s = {
+      fill: { patternType: 'solid', fgColor: { rgb: '16A34A' } },
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      alignment: { horizontal: 'center' },
+    };
+  });
+
+  (ws as Record<string, unknown>)['!cols'] = GPT_COLUMNS.map((c) => ({
+    wch: Math.max(c.length + 4, 14),
+  }));
+
+  const wb = XLSXStyle.utils.book_new();
+  XLSXStyle.utils.book_append_sheet(wb, ws, 'GPT형식');
+  XLSXStyle.writeFile(wb, `GPT형식_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export function exportCmsExcel(rows: CmsRow[]): void {
   const aoa: unknown[][] = [CMS_COLUMNS as unknown as unknown[]];
   rows.forEach((r) => aoa.push(CMS_COLUMNS.map((c) => r[c])));

@@ -1,15 +1,16 @@
 import { useState, useCallback } from 'react';
-import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud } from 'lucide-react';
+import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud, ArrowRightLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import { SummaryDashboard } from '@/components/SummaryDashboard';
 import { ResultTable } from '@/components/ResultTable';
 import { ColumnMappingModal } from '@/components/ColumnMappingModal';
 import { CmsGenerator } from '@/components/CmsGenerator';
+import { CmsConverter } from '@/components/CmsConverter';
 import { parseExcel, diffExcelData, exportToExcel, autoDetectMapping } from '@/lib/excel';
 import type { DiffResult, SummaryStats, ColumnMapping } from '@/types';
 
-type Tab = 'compare' | 'cms';
+type Tab = 'compare' | 'cms' | 'converter';
 
 type Theme = 'light' | 'dark';
 
@@ -155,6 +156,7 @@ export default function App() {
           {([
             { id: 'compare' as Tab, label: '비교 분석', icon: <GitCompare className="w-3.5 h-3.5" /> },
             { id: 'cms' as Tab, label: 'CMS 업로드 생성', icon: <UploadCloud className="w-3.5 h-3.5" /> },
+            { id: 'converter' as Tab, label: 'CMS → GPT 변환', icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
           ] as const).map(({ id, label, icon }) => (
             <button
               key={id}
@@ -169,6 +171,11 @@ export default function App() {
               {id === 'cms' && results && results.filter(r => r._status === '업데이트').length > 0 && (
                 <span className="ml-1 bg-orange-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
                   {results.filter(r => r._status === '업데이트').length}
+                </span>
+              )}
+              {id === 'converter' && (
+                <span className="ml-1 bg-green-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
+                  NEW
                 </span>
               )}
             </button>
@@ -289,6 +296,19 @@ export default function App() {
               diffResults={results}
               compMapping={results ? mapping : null}
             />
+          </section>
+        )}
+
+        {/* ── TAB 3: CMS → GPT 변환 ── */}
+        {activeTab === 'converter' && (
+          <section className="space-y-2">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold">CMS → GPT 형식 변환기</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                기존 CMS 엑셀을 비교 분석 도구에 바로 사용할 수 있는 GPT 형식으로 변환합니다.
+              </p>
+            </div>
+            <CmsConverter />
           </section>
         )}
       </main>
