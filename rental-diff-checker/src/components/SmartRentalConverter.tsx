@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileSpreadsheet, Download, Shuffle, CheckCircle2, AlertCircle } from 'lucide-react';
+import { FileSpreadsheet, Download, Shuffle, CheckCircle2, AlertCircle, Link } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import { parseExcel } from '@/lib/excel';
@@ -7,23 +7,38 @@ import {
   detectSmartRentalCols,
   convertSmartRentalToCms,
   exportSmartRentalCms,
+  matchProductCodes,
+  detectCmsRefCols,
+  exportSmartRentalCmsWithCodes,
 } from '@/lib/smartRental';
-import type { SmartRentalCols } from '@/lib/smartRental';
+import type { SmartRentalCols, CodeMatchResult } from '@/lib/smartRental';
+import type { CmsRow } from '@/lib/cms';
 
 export function SmartRentalConverter() {
+  // ── 1단계 상태 ──────────────────────────────────────────────────────────
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [detectedCols, setDetectedCols] = useState<SmartRentalCols | null>(null);
   const [preview, setPreview] = useState<{ source: number; output: number } | null>(null);
-  const [converted, setConverted] = useState<ReturnType<typeof convertSmartRentalToCms> | null>(null);
+  const [converted, setConverted] = useState<CmsRow[] | null>(null);
 
+  // ── 2단계 상태 ──────────────────────────────────────────────────────────
+  const [cmsRefFile, setCmsRefFile] = useState<File | null>(null);
+  const [step2Loading, setStep2Loading] = useState(false);
+  const [step2Error, setStep2Error] = useState<string | null>(null);
+  const [matchResult, setMatchResult] = useState<CodeMatchResult | null>(null);
+
+  // ── 1단계: 스마트렌탈 파일 로드 ─────────────────────────────────────────
   async function handleFileLoad(f: File | null) {
     setFile(f);
     setDetectedCols(null);
     setPreview(null);
     setConverted(null);
     setError(null);
+    setCmsRefFile(null);
+    setMatchResult(null);
+    setStep2Error(null);
     if (!f) return;
 
     setLoading(true);
@@ -53,6 +68,38 @@ export function SmartRentalConverter() {
     }
   }
 
+  // ── 2단계: 기존 CMS 참조 파일로 제품코드 매칭 ───────────────────────────
+  async function handleCmsRefLoad(f: File | null) {
+    setCmsRefFile(f);
+    setMatchResult(null);
+    setStep2Error(null);
+    if (!f || !converted) return;
+
+    setStep2Loading(true);
+    try {
+      const { rows, headers } = await parseExcel(f);
+      const { modelCol, codeCol } = detectCmsRefCols(headers);
+
+      if (!modelCol) {
+        setStep2Error('CMS 파일에서 모델명 컬럼을 찾지 못했습니다.');
+        setStep2Loading(false);
+        return;
+      }
+      if (!codeCol) {
+        setStep2Error('CMS 파일에서 제품코드 컬럼을 찾지 못했습니다.');
+        setStep2Loading(false);
+        return;
+      }
+
+      const result = matchProductCodes(converted, rows, modelCol, codeCol);
+      setMatchResult(result);
+    } catch (e) {
+      setStep2Error((e as Error).message);
+    } finally {
+      setStep2Loading(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 설명 배너 */}
@@ -74,7 +121,7 @@ export function SmartRentalConverter() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
           {[
             { from: '품목', to: '제품그룹 (3자리 코드 / 미매칭 시 047)' },
-            { from: '상품명', to: '제품명' },
+            { from: '상품명', to: '제품명 + 기간 (예: 상품명 (36))' },
             { from: '모델명', to: '모델명' },
             { from: '월 렌탈료(36개월)', to: '의무기간=36, 렌탈가' },
             { from: '월 렌탈료(48개월)', to: '의무기간=48, 렌탈가' },
@@ -91,10 +138,10 @@ export function SmartRentalConverter() {
         </div>
       </div>
 
-      {/* 파일 업로드 */}
+      {/* ── 1단계: 파일 업로드 ── */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          스마트렌탈 엑셀 업로드
+          1단계 · 스마트렌탈 엑셀 업로드
         </p>
         <UploadZone
           label="스마트렌탈 파일"
@@ -112,7 +159,7 @@ export function SmartRentalConverter() {
         )}
       </div>
 
-      {/* 감지된 컬럼 표시 */}
+      {/* 감지된 컬럼 */}
       {detectedCols && (
         <div className="rounded-xl border p-4 space-y-3">
           <p className="text-sm font-semibold">감지된 컬럼</p>
@@ -128,9 +175,7 @@ export function SmartRentalConverter() {
               <div key={label} className="flex items-center gap-1.5 px-2 py-1 rounded bg-muted/50 border">
                 <span className="text-muted-foreground">{label}:</span>
                 {col ? (
-                  <span className="font-medium text-green-700 dark:text-green-400 truncate" title={col}>
-                    {col}
-                  </span>
+                  <span className="font-medium text-green-700 dark:text-green-400 truncate" title={col}>{col}</span>
                 ) : (
                   <span className="text-red-500">미감지</span>
                 )}
@@ -140,10 +185,12 @@ export function SmartRentalConverter() {
         </div>
       )}
 
-      {/* 변환 결과 */}
-      {preview && (
-        <div className="rounded-xl border p-4 space-y-3">
-          <p className="text-sm font-semibold">변환 결과</p>
+      {/* 변환 결과 + 1단계 다운로드 */}
+      {preview && converted && (
+        <div className="rounded-xl border p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold">1단계 변환 결과</p>
+          </div>
           <div className="flex flex-wrap gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-sm font-medium">
               📋 원본 <strong>{preview.source}행</strong>
@@ -155,50 +202,72 @@ export function SmartRentalConverter() {
               <span className="text-xs opacity-70">(렌탈기간별 분리)</span>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            빈 렌탈료 기간은 제외됩니다.
-          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-violet-300 text-violet-700 hover:bg-violet-50"
+            onClick={() => exportSmartRentalCms(converted)}
+          >
+            <Download className="w-3.5 h-3.5" />
+            1단계 파일 다운로드 (제품코드 없음)
+          </Button>
         </div>
       )}
 
-      {/* 출력 컬럼 미리보기 */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          출력 컬럼 (CMS 업로드 양식)
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {(['제품코드','제품명','모델명','관리방법','제품그룹','브랜드','의무기간','렌탈가','일반판매가','접수여부','조리수체크','제품설명','세부구분','입력자','입력일시','수정자','수정일시'] as const).map(col => {
-            const isKey = ['제품명','모델명','제품그룹','의무기간','렌탈가'].includes(col);
-            return (
-              <span
-                key={col}
-                className={`px-2 py-0.5 rounded text-xs font-medium border ${
-                  isKey
-                    ? 'bg-violet-100 text-violet-700 border-violet-300 dark:bg-violet-900/30 dark:text-violet-300'
-                    : 'bg-muted text-muted-foreground border-border'
-                }`}
-              >
-                {col}
-              </span>
-            );
-          })}
-        </div>
-        <p className="text-xs text-muted-foreground">
-          <span className="text-violet-600">보라색</span> = 스마트렌탈에서 채워지는 핵심 컬럼 / 나머지는 빈칸
-        </p>
-      </div>
-
-      {/* 다운로드 버튼 */}
+      {/* ── 2단계: 기존 CMS로 제품코드 매칭 ── */}
       {converted && converted.length > 0 && (
-        <div className="flex justify-end pt-2">
-          <Button
-            size="lg"
-            className="gap-2 h-12 px-8 bg-violet-600 hover:bg-violet-700 font-semibold"
-            onClick={() => exportSmartRentalCms(converted)}
-          >
-            <Download className="w-4 h-4" />
-            CMS 변환 파일 다운로드 ({preview?.output}행)
-          </Button>
+        <div className="rounded-xl border-2 border-teal-200 dark:border-teal-800 p-5 space-y-4 bg-teal-50/40 dark:bg-teal-950/10">
+          <div className="flex items-start gap-2">
+            <Link className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">
+                2단계 · 기존 CMS에서 제품코드 매칭
+              </p>
+              <p className="text-xs text-teal-700 dark:text-teal-400 mt-0.5">
+                기존 CMS 엑셀을 업로드하면 모델명이 일치하는 행에서 제품코드를 자동으로 찾아 넣어줍니다.
+              </p>
+            </div>
+          </div>
+
+          <UploadZone
+            label="기존 CMS 파일 (제품코드 참조용)"
+            sublabel="모델명·제품코드 컬럼이 포함된 현재 CMS 엑셀"
+            file={cmsRefFile}
+            onFile={handleCmsRefLoad}
+            accent="blue"
+          />
+
+          {step2Loading && <p className="text-xs text-muted-foreground">매칭 중...</p>}
+          {step2Error && (
+            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 px-3 py-2 rounded-lg">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              {step2Error}
+            </div>
+          )}
+
+          {matchResult && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 text-sm font-medium">
+                  ✅ 제품코드 매칭 <strong>{matchResult.matched}건</strong>
+                </div>
+                {matchResult.unmatched > 0 && (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 text-sm font-medium">
+                    ⚠️ 미매칭 <strong>{matchResult.unmatched}건</strong>
+                    <span className="text-xs">(제품코드 빈칸)</span>
+                  </div>
+                )}
+              </div>
+              <Button
+                size="lg"
+                className="gap-2 h-12 px-8 bg-teal-600 hover:bg-teal-700 font-semibold"
+                onClick={() => exportSmartRentalCmsWithCodes(matchResult.rows)}
+              >
+                <Download className="w-4 h-4" />
+                2단계 파일 다운로드 (제품코드 포함, {matchResult.rows.length}행)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

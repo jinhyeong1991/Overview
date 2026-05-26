@@ -23,7 +23,7 @@ export function detectSmartRentalCols(headers: string[]): SmartRentalCols {
   const find = (...kws: string[]) =>
     headers.find(h => kws.every(k => normH(h).includes(k))) ?? '';
 
-  // 월렌탈료: contains '월' + ('렌탈료' or '렌탈') + month number, NOT '총'
+  // 월렌탈료: contains '월' + '렌탈' + month number, NOT '총'
   const findFee = (months: number) => {
     const m = String(months);
     return (
@@ -41,7 +41,7 @@ export function detectSmartRentalCols(headers: string[]): SmartRentalCols {
 
   return {
     품목: find('품목') || find('분류') || find('카테고리') || find('category') || '',
-    상품명: find('상품명') || find('제품명') || find('품명') || '',
+    상품명: find('상품명') || find('제품명') || find('품명') || find('상품') || '',
     모델명: find('모델명') || find('모델') || '',
     fee36: findFee(36),
     fee48: findFee(48),
@@ -78,18 +78,18 @@ export function convertSmartRentalToCms(
   rows.forEach(row => {
     const 상품명 = String(row[cols.상품명] ?? '').trim();
     const 모델명 = String(row[cols.모델명] ?? '').trim();
-    if (!상품명 && !모델명) return; // skip blank rows
+    if (!상품명 && !모델명) return;
 
     const groupCode = resolveGroupCode(String(row[cols.품목] ?? ''));
 
     periods.forEach(({ col, months }) => {
       if (!col) return;
       const fee = cleanFee(row[col]);
-      if (!fee) return; // skip if no fee for this period
+      if (!fee) return;
 
       result.push({
         제품코드: '',
-        제품명: 상품명 ? `${상품명}(${months})` : '',
+        제품명: 상품명 ? `${상품명} (${months})` : '',   // 공백 추가
         모델명: 모델명,
         관리방법: '',
         제품그룹: groupCode,
@@ -112,31 +112,78 @@ export function convertSmartRentalToCms(
   return result;
 }
 
-export function exportSmartRentalCms(rows: CmsRow[]): void {
+// ── 2단계: 기존 CMS에서 모델명 매칭 → 제품코드 채우기 ─────────────────────
+
+export interface CodeMatchResult {
+  rows: CmsRow[];
+  matched: number;
+  unmatched: number;
+}
+
+export function matchProductCodes(
+  convertedRows: CmsRow[],
+  cmsRefRows: Record<string, unknown>[],
+  modelCol: string,
+  codeCol: string
+): CodeMatchResult {
+  // Build map: normalized 모델명 → 제품코드 (first occurrence wins)
+  const codeMap = new Map<string, string>();
+  cmsRefRows.forEach(row => {
+    const model = String(row[modelCol] ?? '').trim().toLowerCase();
+    const code = String(row[codeCol] ?? '').trim();
+    if (model && code && !codeMap.has(model)) {
+      codeMap.set(model, code);
+    }
+  });
+
+  let matched = 0;
+  let unmatched = 0;
+
+  const rows = convertedRows.map(row => {
+    const key = row.모델명.trim().toLowerCase();
+    const code = codeMap.get(key) ?? '';
+    if (code) matched++;
+    else unmatched++;
+    return { ...row, 제품코드: code };
+  });
+
+  return { rows, matched, unmatched };
+}
+
+// Detect 모델명·제품코드 columns in a CMS reference file
+export function detectCmsRefCols(headers: string[]): { modelCol: string; codeCol: string } {
+  const norm = (h: string) => h.toLowerCase().trim();
+  const find = (...kws: string[]) =>
+    headers.find(h => kws.some(k => norm(h).includes(k))) ?? '';
+  return {
+    modelCol: find('모델명', 'model'),
+    codeCol:  find('제품코드', '상품코드', 'code', 'sku'),
+  };
+}
+
+// ── 엑셀 내보내기 ─────────────────────────────────────────────────────────
+
+function buildSheet(rows: CmsRow[], headerColor: string): Record<string, XlsxCell> {
   const aoa: unknown[][] = [CMS_COLUMNS as unknown as unknown[]];
   rows.forEach(r => aoa.push(CMS_COLUMNS.map(c => r[c])));
 
   const ws = XLSXStyle.utils.aoa_to_sheet(aoa) as Record<string, XlsxCell>;
 
-  // Header: purple
   CMS_COLUMNS.forEach((_, ci) => {
     const addr = XLSXStyle.utils.encode_cell({ r: 0, c: ci });
     if (!ws[addr]) return;
     ws[addr].s = {
-      fill: { patternType: 'solid', fgColor: { rgb: '7C3AED' } },
+      fill: { patternType: 'solid', fgColor: { rgb: headerColor } },
       font: { bold: true, color: { rgb: 'FFFFFF' } },
       alignment: { horizontal: 'center' },
     };
   });
 
-  // Data rows: light yellow
   rows.forEach((_, ri) => {
     CMS_COLUMNS.forEach((_, ci) => {
       const addr = XLSXStyle.utils.encode_cell({ r: ri + 1, c: ci });
       if (!ws[addr]) ws[addr] = { v: '', t: 's' };
-      ws[addr].s = {
-        fill: { patternType: 'solid', fgColor: { rgb: 'FEFCE8' } },
-      };
+      ws[addr].s = { fill: { patternType: 'solid', fgColor: { rgb: 'FEFCE8' } } };
     });
   });
 
@@ -144,7 +191,19 @@ export function exportSmartRentalCms(rows: CmsRow[]): void {
     wch: Math.max(c.length + 4, 14),
   }));
 
+  return ws;
+}
+
+export function exportSmartRentalCms(rows: CmsRow[]): void {
+  const ws = buildSheet(rows, '7C3AED');
   const wb = XLSXStyle.utils.book_new();
-  XLSXStyle.utils.book_append_sheet(wb, ws, 'CMS업로드');
+  XLSXStyle.utils.book_append_sheet(wb, ws as Parameters<typeof XLSXStyle.utils.book_append_sheet>[1], 'CMS업로드');
   XLSXStyle.writeFile(wb, `스마트렌탈_CMS변환_${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
+export function exportSmartRentalCmsWithCodes(rows: CmsRow[]): void {
+  const ws = buildSheet(rows, '0F766E');  // teal header — 2단계 파일 구분용
+  const wb = XLSXStyle.utils.book_new();
+  XLSXStyle.utils.book_append_sheet(wb, ws as Parameters<typeof XLSXStyle.utils.book_append_sheet>[1], 'CMS업로드_제품코드');
+  XLSXStyle.writeFile(wb, `스마트렌탈_CMS제품코드_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
