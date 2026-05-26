@@ -89,7 +89,7 @@ export function convertSmartRentalToCms(
 
       result.push({
         제품코드: '',
-        제품명: 상품명,
+        제품명: 상품명 ? `${상품명}(${months})` : '',
         모델명: 모델명,
         관리방법: '',
         제품그룹: groupCode,
