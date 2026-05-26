@@ -214,62 +214,69 @@ export function SmartRentalConverter() {
         </div>
       )}
 
-      {/* ── 2단계: 기존 CMS로 제품코드 매칭 ── */}
-      {converted && converted.length > 0 && (
-        <div className="rounded-xl border-2 border-teal-200 dark:border-teal-800 p-5 space-y-4 bg-teal-50/40 dark:bg-teal-950/10">
-          <div className="flex items-start gap-2">
-            <Link className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">
-                2단계 · 기존 CMS에서 제품코드 매칭
-              </p>
-              <p className="text-xs text-teal-700 dark:text-teal-400 mt-0.5">
-                기존 CMS 엑셀을 업로드하면 모델명이 일치하는 행에서 제품코드를 자동으로 찾아 넣어줍니다.
-              </p>
-            </div>
+      {/* ── 구분선 ── */}
+      <div className="border-t pt-2" />
+
+      {/* ── 2단계: 기존 CMS로 제품코드 매칭 (항상 표시) ── */}
+      <div className={`rounded-xl border-2 p-5 space-y-4 transition-opacity ${
+        converted && converted.length > 0
+          ? 'border-teal-200 dark:border-teal-800 bg-teal-50/40 dark:bg-teal-950/10'
+          : 'border-muted bg-muted/20 opacity-50 pointer-events-none'
+      }`}>
+        <div className="flex items-start gap-2">
+          <Link className="w-4 h-4 text-teal-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-teal-800 dark:text-teal-300">
+              2단계 · 기존 CMS에서 제품코드 매칭
+            </p>
+            <p className="text-xs text-teal-700 dark:text-teal-400 mt-0.5">
+              {converted && converted.length > 0
+                ? '기존 CMS 엑셀을 업로드하면 모델명이 일치하는 행에서 제품코드를 자동으로 찾아 넣어줍니다.'
+                : '1단계 스마트렌탈 파일 변환을 먼저 완료해 주세요.'}
+            </p>
           </div>
-
-          <UploadZone
-            label="기존 CMS 파일 (제품코드 참조용)"
-            sublabel="모델명·제품코드 컬럼이 포함된 현재 CMS 엑셀"
-            file={cmsRefFile}
-            onFile={handleCmsRefLoad}
-            accent="blue"
-          />
-
-          {step2Loading && <p className="text-xs text-muted-foreground">매칭 중...</p>}
-          {step2Error && (
-            <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 px-3 py-2 rounded-lg">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              {step2Error}
-            </div>
-          )}
-
-          {matchResult && (
-            <div className="space-y-3">
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 text-sm font-medium">
-                  ✅ 제품코드 매칭 <strong>{matchResult.matched}건</strong>
-                </div>
-                {matchResult.unmatched > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 text-sm font-medium">
-                    ⚠️ 미매칭 <strong>{matchResult.unmatched}건</strong>
-                    <span className="text-xs">(제품코드 빈칸)</span>
-                  </div>
-                )}
-              </div>
-              <Button
-                size="lg"
-                className="gap-2 h-12 px-8 bg-teal-600 hover:bg-teal-700 font-semibold"
-                onClick={() => exportSmartRentalCmsWithCodes(matchResult.rows)}
-              >
-                <Download className="w-4 h-4" />
-                2단계 파일 다운로드 (제품코드 포함, {matchResult.rows.length}행)
-              </Button>
-            </div>
-          )}
         </div>
-      )}
+
+        <UploadZone
+          label="기존 CMS 파일 (제품코드 참조용)"
+          sublabel="모델명·제품코드 컬럼이 포함된 현재 CMS 엑셀"
+          file={cmsRefFile}
+          onFile={handleCmsRefLoad}
+          accent="blue"
+        />
+
+        {step2Loading && <p className="text-xs text-muted-foreground">매칭 중...</p>}
+        {step2Error && (
+          <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 px-3 py-2 rounded-lg">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            {step2Error}
+          </div>
+        )}
+
+        {matchResult && (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 text-sm font-medium">
+                ✅ 제품코드 매칭 <strong>{matchResult.matched}건</strong>
+              </div>
+              {matchResult.unmatched > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 text-sm font-medium">
+                  ⚠️ 미매칭 <strong>{matchResult.unmatched}건</strong>
+                  <span className="text-xs">(제품코드 빈칸)</span>
+                </div>
+              )}
+            </div>
+            <Button
+              size="lg"
+              className="gap-2 h-12 px-8 bg-teal-600 hover:bg-teal-700 font-semibold"
+              onClick={() => exportSmartRentalCmsWithCodes(matchResult.rows)}
+            >
+              <Download className="w-4 h-4" />
+              2단계 파일 다운로드 (제품코드 포함, {matchResult.rows.length}행)
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* 안내 (파일 없을 때) */}
       {!file && (
