@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud, ArrowRightLeft } from 'lucide-react';
+import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud, ArrowRightLeft, Shuffle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import { SummaryDashboard } from '@/components/SummaryDashboard';
@@ -7,10 +7,11 @@ import { ResultTable } from '@/components/ResultTable';
 import { ColumnMappingModal } from '@/components/ColumnMappingModal';
 import { CmsGenerator } from '@/components/CmsGenerator';
 import { CmsConverter } from '@/components/CmsConverter';
+import { SmartRentalConverter } from '@/components/SmartRentalConverter';
 import { parseExcel, diffExcelData, exportToExcel, autoDetectMapping } from '@/lib/excel';
 import type { DiffResult, SummaryStats, ColumnMapping } from '@/types';
 
-type Tab = 'compare' | 'cms' | 'converter';
+type Tab = 'compare' | 'cms' | 'converter' | 'smart';
 
 type Theme = 'light' | 'dark';
 
@@ -157,6 +158,7 @@ export default function App() {
             { id: 'compare' as Tab, label: '비교 분석', icon: <GitCompare className="w-3.5 h-3.5" /> },
             { id: 'cms' as Tab, label: 'CMS 업로드 생성', icon: <UploadCloud className="w-3.5 h-3.5" /> },
             { id: 'converter' as Tab, label: 'CMS → GPT 변환', icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
+            { id: 'smart' as Tab, label: '스마트렌탈 → CMS', icon: <Shuffle className="w-3.5 h-3.5" /> },
           ] as const).map(({ id, label, icon }) => (
             <button
               key={id}
@@ -173,7 +175,7 @@ export default function App() {
                   {results.filter(r => r._status === '업데이트').length}
                 </span>
               )}
-              {id === 'converter' && (
+              {(id === 'converter' || id === 'smart') && (
                 <span className="ml-1 bg-green-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
                   NEW
                 </span>
@@ -309,6 +311,19 @@ export default function App() {
               </p>
             </div>
             <CmsConverter />
+          </section>
+        )}
+
+        {/* ── TAB 4: 스마트렌탈 → CMS 변환 ── */}
+        {activeTab === 'smart' && (
+          <section className="space-y-2">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold">스마트렌탈 → CMS 변환기</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                스마트렌탈 가로형식 엑셀을 CMS 업로드용 세로형식으로 자동 변환합니다.
+              </p>
+            </div>
+            <SmartRentalConverter />
           </section>
         )}
       </main>
