@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud, ArrowRightLeft, Shuffle } from 'lucide-react';
+import { Moon, Sun, Download, RefreshCw, GitCompare, UploadCloud, ArrowRightLeft, Shuffle, Scale } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import { SummaryDashboard } from '@/components/SummaryDashboard';
@@ -8,10 +8,11 @@ import { ColumnMappingModal } from '@/components/ColumnMappingModal';
 import { CmsGenerator } from '@/components/CmsGenerator';
 import { CmsConverter } from '@/components/CmsConverter';
 import { SmartRentalConverter } from '@/components/SmartRentalConverter';
+import { KyowonComparator } from '@/components/KyowonComparator';
 import { parseExcel, diffExcelData, exportToExcel, autoDetectMapping } from '@/lib/excel';
 import type { DiffResult, SummaryStats, ColumnMapping } from '@/types';
 
-type Tab = 'compare' | 'cms' | 'converter' | 'smart';
+type Tab = 'compare' | 'cms' | 'converter' | 'smart' | 'kyowon';
 
 type Theme = 'light' | 'dark';
 
@@ -159,6 +160,7 @@ export default function App() {
             { id: 'cms' as Tab, label: 'CMS 업로드 생성', icon: <UploadCloud className="w-3.5 h-3.5" /> },
             { id: 'converter' as Tab, label: 'CMS → GPT 변환', icon: <ArrowRightLeft className="w-3.5 h-3.5" /> },
             { id: 'smart' as Tab, label: '스마트렌탈 → CMS', icon: <Shuffle className="w-3.5 h-3.5" /> },
+            { id: 'kyowon' as Tab, label: '교원웰스 비교', icon: <Scale className="w-3.5 h-3.5" /> },
           ] as const).map(({ id, label, icon }) => (
             <button
               key={id}
@@ -175,7 +177,7 @@ export default function App() {
                   {results.filter(r => r._status === '업데이트').length}
                 </span>
               )}
-              {(id === 'converter' || id === 'smart') && (
+              {(id === 'converter' || id === 'smart' || id === 'kyowon') && (
                 <span className="ml-1 bg-green-500 text-white text-xs rounded-full px-1.5 py-0.5 leading-none">
                   NEW
                 </span>
@@ -324,6 +326,19 @@ export default function App() {
               </p>
             </div>
             <SmartRentalConverter />
+          </section>
+        )}
+
+        {/* ── TAB 5: 교원웰스 비교 ── */}
+        {activeTab === 'kyowon' && (
+          <section className="space-y-2">
+            <div className="mb-4">
+              <h2 className="text-base font-semibold">교원웰스 프로모션 비교</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                5월·6월 시트가 포함된 엑셀을 업로드해 변경·신규·단종을 색상으로 표시한 결과 엑셀을 받으세요.
+              </p>
+            </div>
+            <KyowonComparator />
           </section>
         )}
       </main>
