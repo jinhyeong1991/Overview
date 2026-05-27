@@ -360,6 +360,17 @@ export function generateKyowonCmsRows(diffRows: KyowonRow[], startSeq = 1): CmsR
   return result;
 }
 
+// 단일 시트 전체를 신규로 간주하여 CMS 행 생성 (비교 없이 전체 변환)
+export function generateKyowonCmsFromSheet(sheet: unknown[][], startSeq = 1): CmsRow[] {
+  const dataRows = sheet.slice(1).filter(isDataRow);
+  const allAsNew: KyowonRow[] = dataRows.map((row) => ({
+    status: '신규' as const,
+    row,
+    diffCols: [],
+  }));
+  return generateKyowonCmsRows(allAsNew, startSeq);
+}
+
 // CMS 엑셀 내보내기 (구전산 양식, 노란 배경)
 export function exportKyowonCmsExcel(rows: CmsRow[]): void {
   const aoa: unknown[][] = [CMS_COLUMNS as unknown as unknown[]];
