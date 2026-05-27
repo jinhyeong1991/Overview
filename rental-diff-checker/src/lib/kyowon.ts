@@ -44,26 +44,20 @@ function isDataRow(row: unknown[]): boolean {
   );
 }
 
-export async function parseKyowonFile(
-  file: File
-): Promise<{ sheetNames: string[]; rawSheets: Map<string, unknown[][]> }> {
+export function parseKyowonSheet(file: File): Promise<unknown[][]> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target!.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const rawSheets = new Map<string, unknown[][]>();
-        workbook.SheetNames.forEach((name) => {
-          const sheet = workbook.Sheets[name];
-          const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
-            header: 1,
-            defval: '',
-            raw: false,
-          });
-          rawSheets.set(name, rows);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+          header: 1,
+          defval: '',
+          raw: false,
         });
-        resolve({ sheetNames: workbook.SheetNames, rawSheets });
+        resolve(rows);
       } catch (err) {
         reject(new Error('엑셀 파일 파싱 실패: ' + (err as Error).message));
       }
