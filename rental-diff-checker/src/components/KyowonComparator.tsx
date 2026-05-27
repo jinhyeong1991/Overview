@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileSpreadsheet, Download, Scale, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { FileSpreadsheet, Download, Scale, AlertCircle, CheckCircle2, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import {
@@ -7,22 +7,31 @@ import {
   compareSheets,
   calcKyowonSummary,
   exportKyowonExcel,
+  generateKyowonCmsRows,
+  exportKyowonCmsExcel,
 } from '@/lib/kyowon';
 import type { KyowonRow, KyowonSummary } from '@/lib/kyowon';
+import type { CmsRow } from '@/lib/cms';
 
 export function KyowonComparator() {
   const [fileMay, setFileMay] = useState<File | null>(null);
   const [fileJune, setFileJune] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 비교 결과
   const [result, setResult] = useState<KyowonRow[] | null>(null);
   const [summary, setSummary] = useState<KyowonSummary | null>(null);
   const [header, setHeader] = useState<unknown[]>([]);
+
+  // CMS 결과
+  const [cmsRows, setCmsRows] = useState<CmsRow[] | null>(null);
 
   function resetResult() {
     setResult(null);
     setSummary(null);
     setError(null);
+    setCmsRows(null);
   }
 
   async function handleCompare() {
@@ -30,10 +39,10 @@ export function KyowonComparator() {
       setError('5월 파일과 6월 파일을 모두 업로드해 주세요.');
       return;
     }
-
     setError(null);
     setResult(null);
     setSummary(null);
+    setCmsRows(null);
     setLoading(true);
 
     try {
@@ -41,7 +50,6 @@ export function KyowonComparator() {
         parseKyowonSheet(fileMay),
         parseKyowonSheet(fileJune),
       ]);
-
       const headerRow = sheetJune[0] ?? sheetMay[0] ?? [];
       setHeader(headerRow);
 
@@ -55,9 +63,10 @@ export function KyowonComparator() {
     }
   }
 
-  function handleDownload() {
+  function handleGenerateCms() {
     if (!result) return;
-    exportKyowonExcel(result, header);
+    const rows = generateKyowonCmsRows(result);
+    setCmsRows(rows);
   }
 
   const summaryCards = summary
@@ -69,26 +78,25 @@ export function KyowonComparator() {
       ]
     : [];
 
+  const cmsTargetCount = summary ? summary.신규 + summary.변경 : 0;
+
   return (
     <div className="space-y-6">
       {/* Info banner */}
       <div className="flex items-start gap-3 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800">
         <Scale className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0" />
         <div className="text-sm">
-          <p className="font-semibold text-indigo-800 dark:text-indigo-300">교원웰스 프로모션 비교</p>
+          <p className="font-semibold text-indigo-800 dark:text-indigo-300">교원웰스 프로모션 비교 + CMS 생성</p>
           <p className="text-indigo-700 dark:text-indigo-400 mt-0.5">
-            5월 기준 파일과 6월 신규 파일을 각각 업로드하세요.
-            C·E·F·G열 기준으로 행을 매칭하고, J~T열의 차이를 색상으로 표시한 엑셀을 내보냅니다.
+            5월·6월 파일을 각각 업로드 → 비교 → 신규·변경 건 CMS(구전산) 파일 생성
           </p>
         </div>
       </div>
 
-      {/* File upload — two files */}
+      {/* ── STEP 1: 파일 업로드 ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            기준 파일 (5월)
-          </p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">기준 파일 (5월)</p>
           <UploadZone
             label="5월 프로모션 파일"
             sublabel=".xlsx / .xls"
@@ -98,9 +106,7 @@ export function KyowonComparator() {
           />
         </div>
         <div className="space-y-1.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            비교 파일 (6월)
-          </p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">비교 파일 (6월)</p>
           <UploadZone
             label="6월 프로모션 파일"
             sublabel=".xlsx / .xls"
@@ -111,13 +117,8 @@ export function KyowonComparator() {
         </div>
       </div>
 
-      {/* Compare button */}
       {fileMay && fileJune && !result && (
-        <Button
-          onClick={handleCompare}
-          disabled={loading}
-          className="gap-2 bg-indigo-600 hover:bg-indigo-700"
-        >
+        <Button onClick={handleCompare} disabled={loading} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
           <Scale className="w-4 h-4" />
           {loading ? '비교 중...' : '비교 시작'}
         </Button>
@@ -131,7 +132,7 @@ export function KyowonComparator() {
         </div>
       )}
 
-      {/* Results */}
+      {/* ── STEP 2: 비교 결과 ── */}
       {summary && result && (
         <div className="rounded-xl border p-4 space-y-4">
           <div className="flex items-center gap-2">
@@ -141,10 +142,7 @@ export function KyowonComparator() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {summaryCards.map(({ label, count, color, dot }) => (
-              <div
-                key={label}
-                className={`flex flex-col items-center gap-1 px-3 py-3 rounded-lg ${color} text-sm font-medium`}
-              >
+              <div key={label} className={`flex flex-col items-center gap-1 px-3 py-3 rounded-lg ${color} text-sm font-medium`}>
                 <div className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${dot}`} />
                   <span>{label}</span>
@@ -155,28 +153,64 @@ export function KyowonComparator() {
           </div>
 
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm bg-green-300" />신규 — 연두색 행
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm bg-orange-400" />변경 — 주황색 셀(J~T)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm bg-gray-300" />단종 — 회색 행
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="inline-block w-3 h-3 rounded-sm border bg-white dark:bg-zinc-800" />유지 — 강조 없음
-            </span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-green-300" />신규 — 연두색 행</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-orange-400" />변경 — 주황색 셀(J~T)</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm bg-gray-300" />단종 — 회색 행</span>
+            <span className="flex items-center gap-1.5"><span className="inline-block w-3 h-3 rounded-sm border bg-white dark:bg-zinc-800" />유지 — 강조 없음</span>
           </div>
 
-          <Button
-            size="lg"
-            className="gap-2 h-12 px-8 bg-indigo-600 hover:bg-indigo-700 font-semibold"
-            onClick={handleDownload}
-          >
-            <Download className="w-4 h-4" />
-            엑셀 다운로드 ({summary.total}행)
-          </Button>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => exportKyowonExcel(result, header)}
+            >
+              <Download className="w-4 h-4" />
+              비교 결과 엑셀 ({summary.total}행)
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3: CMS 생성 ── */}
+      {result && cmsTargetCount > 0 && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-4">
+          <div className="text-sm">
+            <p className="font-semibold text-amber-800 dark:text-amber-300">CMS(구전산) 파일 생성</p>
+            <p className="text-amber-700 dark:text-amber-400 mt-0.5">
+              신규 {summary!.신규}건 + 변경 {summary!.변경}건 → CMS 업로드 양식으로 변환합니다.
+            </p>
+            <ul className="mt-2 text-xs space-y-0.5 text-amber-600 dark:text-amber-500">
+              <li>• 신규: kw{getTodayDateCodePreview()}001~ 코드 자동 생성</li>
+              <li>• 변경(렌탈료 수정): 제품코드 빈칸 → 기존 코드 직접 입력 필요</li>
+              <li>• A열 제품구분, C열 모델명, E열 약정기간, F·G열 관리방법, K~N열 렌탈료, S열 프로모션 반영</li>
+            </ul>
+          </div>
+
+          {!cmsRows ? (
+            <Button onClick={handleGenerateCms} className="gap-2 bg-amber-600 hover:bg-amber-700">
+              <FileText className="w-4 h-4" />
+              CMS 파일 생성
+            </Button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+                <CheckCircle2 className="w-4 h-4" />
+                CMS 행 {cmsRows.length}건 생성 완료
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ※ C열 복수 모델(줄바꿈), M/N 프로모션 우선, S열 프로모션 자동 반영
+              </p>
+              <Button
+                size="lg"
+                className="gap-2 h-12 px-8 bg-amber-600 hover:bg-amber-700 font-semibold"
+                onClick={() => exportKyowonCmsExcel(cmsRows)}
+              >
+                <Download className="w-4 h-4" />
+                CMS 엑셀 다운로드 ({cmsRows.length}행)
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -190,4 +224,11 @@ export function KyowonComparator() {
       )}
     </div>
   );
+}
+
+function getTodayDateCodePreview(): string {
+  const d = new Date();
+  return String(d.getFullYear()).slice(2) +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0');
 }
