@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, GitCompare, RefreshCw } from 'lucide-react';
+import { FileSpreadsheet, Download, AlertCircle, CheckCircle2, FileText, GitCompare, RefreshCw, Presentation, Plus, Minus } from 'lucide-react';
+import { parsePptxSlides, comparePptx } from '@/lib/kyowonPptx';
+import type { PptxDiff } from '@/lib/kyowonPptx';
 import { Button } from '@/components/ui/button';
 import { UploadZone } from '@/components/UploadZone';
 import {
@@ -14,7 +16,7 @@ import {
 import type { KyowonRow, KyowonSummary } from '@/lib/kyowon';
 import type { CmsRow } from '@/lib/cms';
 
-type Mode = 'compare' | 'direct';
+type Mode = 'compare' | 'direct' | 'pptx';
 
 function getTodayDateCodePreview(): string {
   const d = new Date();
@@ -263,6 +265,149 @@ function CompareMode() {
   );
 }
 
+// ── PPTX 비교 모드 ───────────────────────────────────────────────────────────
+function PptxMode() {
+  const [fileMay, setFileMay] = useState<File | null>(null);
+  const [fileJune, setFileJune] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [diff, setDiff] = useState<PptxDiff | null>(null);
+  const [showRemoved, setShowRemoved] = useState(true);
+
+  function reset() { setDiff(null); setError(null); }
+
+  async function handleCompare() {
+    if (!fileMay || !fileJune) { setError('5월·6월 PPTX 파일을 모두 업로드해 주세요.'); return; }
+    setError(null); setDiff(null); setLoading(true);
+    try {
+      const [may, june] = await Promise.all([
+        parsePptxSlides(fileMay),
+        parsePptxSlides(fileJune),
+      ]);
+      setDiff(comparePptx(may, june));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start gap-3 p-4 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800 text-sm">
+        <Presentation className="w-5 h-5 text-purple-600 dark:text-purple-400 mt-0.5 shrink-0" />
+        <div>
+          <p className="font-semibold text-purple-800 dark:text-purple-300">PPTX 비교 모드</p>
+          <p className="text-purple-700 dark:text-purple-400 mt-0.5">
+            5월·6월 PPTX를 업로드하면 신규 추가된 내용과 삭제된 내용을 슬라이드 단위로 보여줍니다.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">기준 파일 (5월 PPTX)</p>
+          <UploadZone label="5월 프로모션 PPTX" sublabel=".pptx" file={fileMay} onFile={(f) => { setFileMay(f); reset(); }} accent="blue" />
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">비교 파일 (6월 PPTX)</p>
+          <UploadZone label="6월 프로모션 PPTX" sublabel=".pptx" file={fileJune} onFile={(f) => { setFileJune(f); reset(); }} accent="blue" />
+        </div>
+      </div>
+
+      {fileMay && fileJune && !diff && (
+        <Button onClick={handleCompare} disabled={loading} className="gap-2 bg-purple-600 hover:bg-purple-700">
+          <GitCompare className="w-4 h-4" />
+          {loading ? '분석 중...' : 'PPTX 비교 시작'}
+        </Button>
+      )}
+
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 rounded-lg">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />{error}
+        </div>
+      )}
+
+      {diff && (
+        <div className="space-y-4">
+          {/* 요약 */}
+          <div className="flex gap-3">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 text-sm font-semibold">
+              <Plus className="w-4 h-4" />신규 {diff.summary.newCount}건
+            </div>
+            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 text-sm font-semibold">
+              <Minus className="w-4 h-4" />삭제 {diff.summary.removedCount}건
+            </div>
+          </div>
+
+          {/* 신규 항목 */}
+          {diff.newInJune.length > 0 && (
+            <div className="rounded-xl border border-green-200 dark:border-green-800 overflow-hidden">
+              <div className="bg-green-50 dark:bg-green-950/30 px-4 py-2.5 flex items-center gap-2">
+                <Plus className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-semibold text-green-800 dark:text-green-300">6월 신규 추가 ({diff.newInJune.length}건)</span>
+              </div>
+              <div className="divide-y divide-green-100 dark:divide-green-900/30 max-h-80 overflow-y-auto">
+                {diff.newInJune.map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 px-4 py-2.5">
+                    <span className="text-xs text-green-600 dark:text-green-500 shrink-0 mt-0.5 font-mono">S{item.slideNumber}</span>
+                    <span className="text-sm text-green-900 dark:text-green-200">{item.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 삭제 항목 */}
+          {diff.removedInMay.length > 0 && (
+            <div className="rounded-xl border border-red-200 dark:border-red-800 overflow-hidden">
+              <button
+                className="w-full bg-red-50 dark:bg-red-950/30 px-4 py-2.5 flex items-center justify-between"
+                onClick={() => setShowRemoved((v) => !v)}
+              >
+                <div className="flex items-center gap-2">
+                  <Minus className="w-4 h-4 text-red-600" />
+                  <span className="text-sm font-semibold text-red-800 dark:text-red-300">5월에서 삭제 ({diff.removedInMay.length}건)</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{showRemoved ? '접기 ▲' : '펼치기 ▼'}</span>
+              </button>
+              {showRemoved && (
+                <div className="divide-y divide-red-100 dark:divide-red-900/30 max-h-80 overflow-y-auto">
+                  {diff.removedInMay.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 px-4 py-2.5">
+                      <span className="text-xs text-red-500 dark:text-red-400 shrink-0 mt-0.5 font-mono">S{item.slideNumber}</span>
+                      <span className="text-sm text-red-800 dark:text-red-300 line-through opacity-70">{item.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {diff.newInJune.length === 0 && diff.removedInMay.length === 0 && (
+            <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800">
+              <CheckCircle2 className="w-5 h-5" />
+              두 파일의 내용이 동일합니다. 차이점이 없습니다.
+            </div>
+          )}
+
+          <Button variant="outline" size="sm" className="gap-2" onClick={() => { setDiff(null); setFileMay(null); setFileJune(null); }}>
+            <RefreshCw className="w-3.5 h-3.5" />초기화
+          </Button>
+        </div>
+      )}
+
+      {!fileMay && !fileJune && (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+          <Presentation className="w-12 h-12 text-muted-foreground/40" />
+          <p className="font-medium text-muted-foreground">5월·6월 PPTX 파일을 업로드해 주세요.</p>
+          <p className="text-xs text-muted-foreground">슬라이드 텍스트 기반으로 신규·삭제 항목을 비교합니다.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 export function KyowonComparator() {
   const [mode, setMode] = useState<Mode>('compare');
@@ -270,7 +415,7 @@ export function KyowonComparator() {
   return (
     <div className="space-y-5">
       {/* 모드 전환 */}
-      <div className="flex rounded-lg border overflow-hidden w-fit">
+      <div className="flex rounded-lg border overflow-hidden w-fit flex-wrap">
         <button
           onClick={() => setMode('compare')}
           className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
@@ -289,9 +434,20 @@ export function KyowonComparator() {
           <FileText className="w-3.5 h-3.5" />
           전체 CMS 변환
         </button>
+        <button
+          onClick={() => setMode('pptx')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
+            mode === 'pptx' ? 'bg-purple-600 text-white' : 'bg-card text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          <Presentation className="w-3.5 h-3.5" />
+          PPTX 비교
+        </button>
       </div>
 
-      {mode === 'compare' ? <CompareMode /> : <DirectCmsMode />}
+      {mode === 'compare' && <CompareMode />}
+      {mode === 'direct' && <DirectCmsMode />}
+      {mode === 'pptx' && <PptxMode />}
     </div>
   );
 }
