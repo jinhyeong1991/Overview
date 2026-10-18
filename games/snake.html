@@ -1,0 +1,25 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>뱀 게임</title>
+<style>body{background:#111;color:#fff;font-family:sans-serif;text-align:center;margin:0;touch-action:none;user-select:none}
+canvas{background:#222;border:2px solid #4c4;width:90vmin;height:90vmin;max-width:400px;max-height:400px}
+.pad{display:grid;grid-template-columns:repeat(3,64px);gap:6px;justify-content:center;margin:10px}
+.pad button{height:64px;font-size:28px;border:0;border-radius:12px;background:#333;color:#fff}
+#r{padding:10px 24px;font-size:18px;border:0;border-radius:10px;background:#4c4;color:#000}</style></head>
+<body><h3>🐍 뱀 게임 · 점수 <span id="s">0</span></h3><canvas id="c" width="400" height="400"></canvas>
+<div class="pad"><span></span><button data-d="0,-1">▲</button><span></span><button data-d="-1,0">◀</button><button id="r">↻</button><button data-d="1,0">▶</button><span></span><button data-d="0,1">▼</button><span></span></div>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),N=20;let sn,d,nd,f,sc,over,t;
+function start(){sn=[{x:10,y:10}];d={x:1,y:0};nd=d;sc=0;over=false;food();clearInterval(t);t=setInterval(step,130);document.getElementById('s').textContent=0}
+function food(){do{f={x:Math.floor(Math.random()*N),y:Math.floor(Math.random()*N)}}while(sn.some(p=>p.x==f.x&&p.y==f.y))}
+function turn(a,b){if(!(a==-d.x&&b==-d.y))nd={x:a,y:b}}
+function step(){d=nd;const h={x:sn[0].x+d.x,y:sn[0].y+d.y};
+if(h.x<0||h.y<0||h.x>=N||h.y>=N||sn.some(p=>p.x==h.x&&p.y==h.y)){over=true;clearInterval(t);draw();return}
+sn.unshift(h);if(h.x==f.x&&h.y==f.y){sc++;document.getElementById('s').textContent=sc;food()}else sn.pop();draw()}
+function draw(){x.fillStyle='#222';x.fillRect(0,0,400,400);x.fillStyle='#e44';x.fillRect(f.x*20,f.y*20,18,18);x.fillStyle='#4c4';sn.forEach(p=>x.fillRect(p.x*20,p.y*20,18,18));
+if(over){x.fillStyle='#fff';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText('게임 오버! '+sc+'점',200,190);x.font='18px sans-serif';x.fillText('↻ 버튼으로 다시 시작',200,225)}}
+document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();const[a,c2]=b.dataset.d.split(',').map(Number);turn(a,c2)}));
+document.getElementById('r').addEventListener('pointerdown',e=>{e.preventDefault();start()});
+let sx,sy;c.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+c.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;Math.abs(dx)>Math.abs(dy)?turn(Math.sign(dx),0):turn(0,Math.sign(dy))});
+document.onkeydown=e=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0]}[e.key];if(k){turn(...k);e.preventDefault()}if(e.code=='Space'){start();e.preventDefault()}};
+start();
+</script></body></html>

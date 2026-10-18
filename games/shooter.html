@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>우주 슈팅</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none;user-select:none;font-family:sans-serif}canvas{display:block}</style></head>
+<body><canvas id="c"></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');let W,H;
+function rs(){W=c.width=innerWidth;H=c.height=innerHeight}rs();onresize=rs;
+let p,bul,en,eb,parts,stars,sc,hp,over,started,tick,best=+localStorage.sb||0;
+stars=Array.from({length:80},()=>({x:Math.random()*W,y:Math.random()*H,s:Math.random()*2+1}));
+function reset(){p={x:W/2,y:H-100};bul=[];en=[];eb=[];parts=[];sc=0;hp=3;over=false;tick=0}reset();
+let tx=null,ty=null;
+function pos(e){const t=e.touches?e.touches[0]:e;return[t.clientX,t.clientY]}
+function down(e){e.preventDefault();if(!started||over){started=true;reset();return}[tx,ty]=pos(e)}
+function move(e){e.preventDefault();if(tx===null)return;const[nx,ny]=pos(e);p.x=Math.max(15,Math.min(W-15,p.x+nx-tx));p.y=Math.max(30,Math.min(H-20,p.y+ny-ty));tx=nx;ty=ny}
+function up(){tx=null}
+c.addEventListener('touchstart',down,{passive:false});c.addEventListener('touchmove',move,{passive:false});c.addEventListener('touchend',up);
+c.addEventListener('mousedown',down);c.addEventListener('mousemove',e=>{if(e.buttons)move(e)});c.addEventListener('mouseup',up);
+function boom(X,Y,col){for(let i=0;i<14;i++)parts.push({x:X,y:Y,vx:(Math.random()-.5)*6,vy:(Math.random()-.5)*6,l:30,col})}
+function ship(X,Y){x.fillStyle='#4cf';x.beginPath();x.moveTo(X,Y-18);x.lineTo(X-14,Y+14);x.lineTo(X,Y+7);x.lineTo(X+14,Y+14);x.fill();x.fillStyle='#fa0';x.fillRect(X-3,Y+10,6,6+Math.random()*6)}
+function loop(){requestAnimationFrame(loop);x.fillStyle='#000';x.fillRect(0,0,W,H);
+x.fillStyle='#fff';stars.forEach(s=>{s.y+=s.s;if(s.y>H){s.y=0;s.x=Math.random()*W}x.fillRect(s.x,s.y,s.s,s.s)});
+if(!started||over){x.fillStyle='#fff';x.textAlign='center';x.font='bold 34px sans-serif';x.fillText(over?'게임 오버':'🚀 우주 슈팅',W/2,H/2-40);
+x.font='20px sans-serif';if(over)x.fillText('점수 '+sc+' · 최고 '+best,W/2,H/2);x.fillText('화면을 터치해서 시작',W/2,H/2+40);x.font='15px sans-serif';x.fillText('손가락으로 드래그해서 이동 · 자동 발사',W/2,H/2+75);return}
+tick++;const lv=1+Math.floor(sc/200);
+if(tick%8==0){bul.push({x:p.x,y:p.y-18});if(lv>=3){bul.push({x:p.x-10,y:p.y-8,vx:-1.5},{x:p.x+10,y:p.y-8,vx:1.5})}}
+if(tick%Math.max(14,45-lv*4)==0){const big=Math.random()<.15;en.push({x:20+Math.random()*(W-40),y:-20,r:big?26:16,hp:big?5:1,v:(big?1:2)+Math.random()*lv*.5,big})}
+bul.forEach(b=>{b.y-=10;b.x+=b.vx||0});bul=bul.filter(b=>b.y>-10);
+x.fillStyle='#ff0';bul.forEach(b=>x.fillRect(b.x-2,b.y-8,4,12));
+en.forEach(e=>{e.y+=e.v;if(e.big&&tick%70==0)eb.push({x:e.x,y:e.y,vx:(p.x-e.x)/120,vy:(p.y-e.y)/120});
+bul.forEach(b=>{if(!b.d&&Math.hypot(b.x-e.x,b.y-e.y)<e.r){b.d=1;e.hp--;if(e.hp<=0&&!e.d){e.d=1;sc+=e.big?50:10;boom(e.x,e.y,e.big?'#f6f':'#f44')}}});
+if(!e.d&&Math.hypot(p.x-e.x,p.y-e.y)<e.r+12){e.d=1;hp--;boom(p.x,p.y,'#4cf');navigator.vibrate&&navigator.vibrate(100)}
+x.fillStyle=e.big?'#f6f':'#f44';x.beginPath();x.arc(e.x,e.y,e.r,0,7);x.fill();x.fillStyle='#000';x.fillRect(e.x-e.r/2,e.y-3,e.r/3,4);x.fillRect(e.x+e.r/6,e.y-3,e.r/3,4)});
+bul=bul.filter(b=>!b.d);en=en.filter(e=>!e.d&&e.y<H+40);
+eb.forEach(b=>{b.x+=b.vx;b.y+=b.vy;if(Math.hypot(b.x-p.x,b.y-p.y)<12){b.d=1;hp--;boom(p.x,p.y,'#4cf')}x.fillStyle='#f80';x.beginPath();x.arc(b.x,b.y,5,0,7);x.fill()});
+eb=eb.filter(b=>!b.d&&b.y<H+10&&b.y>-10);
+parts.forEach(q=>{q.x+=q.vx;q.y+=q.vy;q.l--;x.globalAlpha=q.l/30;x.fillStyle=q.col;x.fillRect(q.x,q.y,3,3)});x.globalAlpha=1;parts=parts.filter(q=>q.l>0);
+ship(p.x,p.y);
+x.fillStyle='#fff';x.textAlign='left';x.font='bold 20px sans-serif';x.fillText('점수 '+sc,12,30);x.fillText('❤️'.repeat(Math.max(hp,0)),12,58);x.textAlign='right';x.fillText('Lv '+lv,W-12,30);
+if(hp<=0){over=true;if(sc>best){best=sc;localStorage.sb=sc}}}
+loop();
+</script></body></html>
