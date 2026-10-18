@@ -67,9 +67,9 @@
         P(1780, GROUND - 46, 120, 12, "wood", true),
       ],
       spawns: [
-        ["slime", 210], ["slime", 300], ["slime", 390], ["slime", 500],
-        ["mushroom", 720], ["slime", 860], ["mushroom", 1000], ["slime", 1160],
-        ["mushroom", 1320], ["slime", 1480], ["mushroom", 1640], ["slime", 1760], ["mushroom", 1880],
+        ["slime", 430], ["slime", 560], ["slime", 700], ["slime", 860],
+        ["mushroom", 1020], ["slime", 1160], ["mushroom", 1300], ["slime", 1460],
+        ["mushroom", 1600], ["slime", 1720], ["mushroom", 1840], ["slime", 1940],
       ],
     },
     {
@@ -317,7 +317,7 @@
       flash: 0, touchCd: 0, stun: 0, dead: false,
       aiT: Math.random() * 1.2, shotCd: 1 + Math.random(), slamCd: 1.5, windup: 0,
       mode: "idle", anim: Math.random() * 4, phase: Math.random() * 6,
-      homeY: 0, p2: false, p3: false,
+      homeX: x, homeY: 0, p2: false, p3: false,
     };
     m.hpMax = m.hp;
     m.homeY = m.y;
@@ -448,7 +448,7 @@
       player.vx = 0; player.vy = 0;
       player.dead = false;
       player.state = "idle";
-      player.invuln = 1;
+      player.invuln = 1.4;
       player.sinceHit = 0;
     }
     snapCam = true;
@@ -765,12 +765,15 @@
     player.y = standY(70) - player.h;
     player.vx = 0; player.vy = 0;
     player.state = "idle";
-    player.invuln = 1.6;
+    player.invuln = 2.4;
     const boss = monsters.find((m) => m.type === "boss" && !m.dead);
     if (boss) boss.x = map.width * 0.62;
     monsters.forEach((m) => {
-      if (m.dead) return;
-      if (Math.abs(m.x - player.x) < 90) m.x += m.x < player.x ? -50 : 50;
+      if (m.dead || m.type === "boss") return;
+      if (m.x < 320) m.x = Math.max(m.homeX || 340, 360);
+      m.vx = 0;
+      m.stun = 1.2;
+      m.touchCd = 1.2;
     });
     toast("다시 도전하세요");
     syncLayers();
@@ -1010,6 +1013,17 @@
     const mcx = m.x + m.w / 2;
     const dist = Math.abs(pcx - mcx);
     const dir = pcx < mcx ? -1 : 1;
+    const home = m.homeX || m.x;
+    const stray = Math.abs(m.x - home) > 340 && dist > 110;
+    if (m.type !== "boss" && (player.dead || stray)) {
+      const back = home - m.x;
+      m.facing = back < 0 ? -1 : 1;
+      m.vx = Math.abs(back) < 8 ? 0 : m.facing * 70;
+      m.vy = m.flying ? 0 : m.vy;
+      if (!m.flying) moveActor(m, dt, true);
+      else m.x += m.vx * dt;
+      return;
+    }
     if (m.type === "boss") updateBoss(m, dt, dist, dir);
     else if (m.type === "slime") updateSlime(m, dt, dist, dir);
     else if (m.type === "mushroom") updateMushroom(m, dt, dist, dir);
@@ -1397,6 +1411,7 @@
       deadTimer -= dt;
       updateParticles(dt);
       animClock += dt;
+      monsters.forEach((m) => updateMonster(m, dt));
       if (deadTimer <= 0) respawn();
       return;
     }
@@ -1889,6 +1904,8 @@
     cssW = Math.max(280, rect.width);
     cssH = Math.max(180, rect.height);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const prevW = viewW;
+    const prevH = viewH;
     view.width = Math.round(cssW * dpr);
     view.height = Math.round(cssH * dpr);
     const scale = Math.max(1, Math.round(cssH / 208));
@@ -1896,6 +1913,7 @@
     viewH = Math.max(120, Math.round(cssH / scale));
     off.width = viewW;
     off.height = viewH;
+    if (prevW && (Math.abs(viewW - prevW) > 12 || Math.abs(viewH - prevH) > 12)) snapCam = true;
   }
 
   function fadeTo(fn) {
