@@ -3,7 +3,7 @@
   const SAVE_KEY = "lumina-adventure-v1";
   const MUTE_KEY = "lumina-muted";
   const GRAVITY = 1450;
-  const JUMP_V = -432;
+  const JUMP_V = -620;
   const MAX_FALL = 620;
   const GROUND = 328;
   const WORLD_H = 440;
@@ -22,7 +22,7 @@
   };
 
   const BESTIARY = {
-    slime: { name: "말랑 슬라임", hp: 26, atk: 8, exp: 20, gold: 5, w: 20, h: 16, speed: 40 },
+    slime: { name: "말랑 슬라임", hp: 22, atk: 6, exp: 20, gold: 5, w: 20, h: 16, speed: 40 },
     mushroom: { name: "뿔버섯", hp: 40, atk: 11, exp: 28, gold: 8, w: 20, h: 24, speed: 34 },
     wolf: { name: "숲늑대", hp: 54, atk: 14, exp: 36, gold: 11, w: 26, h: 22, speed: 36, run: 128 },
     bat: { name: "밤박쥐", hp: 32, atk: 12, exp: 32, gold: 9, w: 28, h: 18, flying: true },
@@ -156,7 +156,7 @@
   let camX = 0, camY = 0, snapCam = true, drawCamX = 0, drawCamY = 0;
   let shake = 0, hitstop = 0, busy = 0, busyQueue = [], bannerSkills = [];
   let animClock = 0, titleT = 0, saveTick = 0;
-  let jumpBuffer = 0, combo = 0, lastComboAt = 0, kills = 0;
+  let jumpBuffer = 0, attackQueue = 0, combo = 0, lastComboAt = 0, kills = 0;
   let paused = false, shopOn = false, mapOn = false, victoryOn = false, confirmOn = false;
   let shopFrom = "play", deadTimer = 0, victoryQueued = false, playedLevel = false;
   let interactKind = null;
@@ -649,6 +649,7 @@
     const kb = m.type === "boss" ? 16 : (opts.kb || 110);
     m.vx = dir * kb;
     if (!m.flying) m.vy = -80;
+    if (m.type !== "boss") m.stun = Math.max(m.stun, 0.32);
     spawnFloater(m.x + m.w / 2, m.y, String(dmg), crit ? "#ffd24a" : "#ffffff");
     if (crit) spawnFloater(m.x + m.w / 2, m.y - 12, "치명타", "#ff9a3c");
     hitstop = Math.max(hitstop, opts.noStop ? 0 : 0.03);
@@ -795,7 +796,7 @@
   }
 
   function meleeBox() {
-    const reach = 28;
+    const reach = 40;
     return {
       x: player.facing > 0 ? player.x + player.w - 4 : player.x - reach,
       y: player.y + 2,
@@ -931,7 +932,11 @@
 
     const ax = axisX();
     if (canAct() && Math.abs(ax) > 0.2) player.facing = Math.sign(ax);
-    if (attackHeld() && player.atkCd <= 0 && canAct()) startAttack();
+    attackQueue = Math.max(0, attackQueue - dt);
+    if ((attackHeld() || attackQueue > 0) && player.atkCd <= 0 && canAct()) {
+      attackQueue = 0;
+      startAttack();
+    }
     jumpBuffer = Math.max(0, jumpBuffer - dt);
     tryJump(false);
 
@@ -960,7 +965,7 @@
     }
 
     if (!jumpHeld() && player.vy < 0 && !player.jumpCut && player.state !== "hurt") {
-      player.vy *= 0.48;
+      player.vy *= 0.7;
       player.jumpCut = true;
     }
 
@@ -1046,7 +1051,8 @@
       if (m.x + m.w > map.width - 8) m.facing = -1;
     }
     if (!player.dead && m.touchCd <= 0 && overlap(m, player)) {
-      hurtPlayer(m.atk, mcx);
+      const justHit = player.hitSet && player.hitSet.has(m);
+      if (!justHit) hurtPlayer(m.atk, mcx);
       m.touchCd = 0.75;
     }
   }
@@ -2286,7 +2292,7 @@
     if (e.code === "KeyM") { toggleMute(); return; }
     if (!gameplay()) return;
     if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW" || e.code === "KeyK") { held.jump = true; queueJump(); }
-    if (e.code === "KeyJ" || e.code === "KeyZ") held.attack = true;
+    if (e.code === "KeyJ" || e.code === "KeyZ") { held.attack = true; attackQueue = 0.28; }
     if (e.code === "Digit1" || e.code === "KeyU") trySkill(0);
     if (e.code === "Digit2" || e.code === "KeyI") trySkill(1);
     if (e.code === "Digit3" || e.code === "KeyO") trySkill(2);
