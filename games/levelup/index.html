@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#1b1440">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>루미나 어드벤처</title>
+<meta name="description" content="귀여운 픽셀 횡스크롤 액션 RPG. 모험가를 고르고, 몬스터를 물리치며 레벨 업하세요.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect fill='%231b1440' width='64' height='64' rx='12'/%3E%3Cpath fill='%23f0c14a' d='M30 8h4v18h12l-8 6 10 24h-6l-8-18-8 18h-6l10-24-8-6h12z'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <canvas id="view"></canvas>
+  <div id="vignette"></div>
+  <div id="flash"></div>
+
+  <div id="hud" class="hidden">
+    <div id="map-progress"><div id="progress-bar"></div></div>
+    <div class="hud-row">
+      <canvas id="portrait" width="48" height="48"></canvas>
+      <div class="bars">
+        <div class="bar-head">
+          <span id="pname">카이</span>
+          <span id="plevel">Lv.1</span>
+        </div>
+        <div class="bar hp" aria-label="체력"><i id="hp-fill"></i><b id="hp-text">0/0</b></div>
+        <div class="bar mp" aria-label="마나"><i id="mp-fill"></i><b id="mp-text">0/0</b></div>
+        <div class="bar exp" aria-label="경험치"><i id="exp-fill"></i></div>
+        <div class="gold-line"><span id="exptext">경험치 0/0</span><span id="stagename">푸른 초원</span></div>
+      </div>
+      <div class="hud-side">
+        <div class="row">
+          <button type="button" class="icon-btn" id="btn-mute" aria-label="소리 끄기">소리</button>
+          <button type="button" class="icon-btn" id="btn-pause" aria-label="일시정지">멈춤</button>
+        </div>
+        <div id="gold">0 골드</div>
+      </div>
+    </div>
+    <div id="objective">오른쪽으로 가서 몬스터를 처치하세요</div>
+  </div>
+  <div id="combo"></div>
+  <div id="boss-wrap" class="hidden">
+    <div class="boss-name" id="boss-name">심연의 수호자 네로스</div>
+    <div class="bar hp"><i id="boss-fill"></i><b id="boss-text"></b></div>
+  </div>
+  <div id="toasts"></div>
+
+  <div id="touch" class="hidden">
+    <div class="pots">
+      <button type="button" class="pot hp" id="btn-php">체력<small id="php-count">0</small></button>
+      <button type="button" class="pot mp" id="btn-pmp">마나<small id="pmp-count">0</small></button>
+    </div>
+    <div class="joystick" id="joy" aria-label="이동 스틱"><div id="knob"></div></div>
+    <div class="actions">
+      <div class="skill-row">
+        <button type="button" class="skill" id="skill-0" aria-label="검기"><span class="nm">검기</span><span class="sub">Lv3</span></button>
+        <button type="button" class="skill" id="skill-1" aria-label="질풍참"><span class="nm">질풍</span><span class="sub">Lv6</span></button>
+        <button type="button" class="skill" id="skill-2" aria-label="회오리"><span class="nm">회오</span><span class="sub">Lv10</span></button>
+        <button type="button" class="skill" id="skill-3" aria-label="성광파"><span class="nm">성광</span><span class="sub">Lv15</span></button>
+      </div>
+      <div class="main-row">
+        <button type="button" id="btn-jump">점프</button>
+        <button type="button" id="btn-attack">공격</button>
+      </div>
+    </div>
+    <button type="button" id="btn-interact" class="hidden">입장</button>
+  </div>
+
+  <section id="screen-title" class="screen">
+    <div class="panel">
+      <h1 class="logo">루미나</h1>
+      <p class="subtitle">별빛 레벨업 모험</p>
+      <p id="save-summary" class="help"></p>
+      <div class="btn-col">
+        <button type="button" class="primary" id="btn-start">모험 시작</button>
+        <button type="button" class="primary hidden" id="btn-continue">이어하기</button>
+        <button type="button" class="ghost hidden" id="btn-new">새 게임</button>
+        <button type="button" class="ghost" id="btn-title-mute">소리 켜짐</button>
+      </div>
+      <p class="help">이동 · 점프 · 공격 · 스킬. 몬스터를 쓰러뜨리면 경험치와 골드를 얻습니다.</p>
+      <p class="fine">진행은 이 기기에 저장됩니다. 키보드: 방향키, J 공격, Space 점프, 1~4 스킬</p>
+    </div>
+  </section>
+
+  <section id="screen-select" class="screen hidden">
+    <div class="select-wrap">
+      <h2>모험가를 선택하세요</h2>
+      <div class="hero-row">
+        <button type="button" class="hero-card" id="btn-pick-male">
+          <canvas id="pick-male" width="160" height="140"></canvas>
+          <h3>카이</h3>
+          <div class="role">푸른 검사</div>
+          <p>체력이 높고 베기가 묵직합니다.<br>체력 ★★★★☆ · 공격 ★★★★☆</p>
+        </button>
+        <button type="button" class="hero-card female" id="btn-pick-female">
+          <canvas id="pick-female" width="160" height="140"></canvas>
+          <h3>리아</h3>
+          <div class="role">새벽 검사</div>
+          <p>발이 빠르고 마나가 풍부합니다.<br>민첩 ★★★★☆ · 마나 ★★★★☆</p>
+        </button>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button type="button" class="ghost" id="btn-back">뒤로</button>
+      </div>
+    </div>
+  </section>
+
+  <div id="modal-pause" class="modal hidden">
+    <div class="panel">
+      <h2>일시정지</h2>
+      <ul class="skill-help" id="skill-help"></ul>
+      <p class="fine">키보드: ← → 이동, Space 점프, J 공격, 1~4 스킬, Q 체력물약, E 마나물약</p>
+      <div class="btn-col">
+        <button type="button" class="primary" id="btn-resume">계속하기</button>
+        <button type="button" class="ghost" id="btn-open-shop">상점</button>
+        <button type="button" class="ghost" id="btn-open-map">지역 선택</button>
+        <button type="button" class="ghost" id="btn-restart">이 지역 다시</button>
+        <button type="button" class="ghost" id="btn-to-title">타이틀로</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-shop" class="modal hidden">
+    <div class="panel">
+      <h2>여행 상점</h2>
+      <div class="shop-gold" id="shop-gold">0 골드</div>
+      <div id="shop-list"></div>
+      <div class="btn-col"><button type="button" class="ghost" id="btn-shop-close">닫기</button></div>
+    </div>
+  </div>
+
+  <div id="modal-map" class="modal hidden">
+    <div class="panel">
+      <h2>지역 선택</h2>
+      <p class="map-note">해금한 지역은 언제든 다시 갈 수 있습니다.</p>
+      <div id="map-list"></div>
+      <div class="btn-col"><button type="button" class="ghost" id="btn-map-close">닫기</button></div>
+    </div>
+  </div>
+
+  <div id="modal-victory" class="modal hidden">
+    <div class="panel">
+      <h2>클리어!</h2>
+      <p id="victory-text" class="help"></p>
+      <div class="btn-col">
+        <button type="button" class="primary" id="btn-vic-map">지역 선택</button>
+        <button type="button" class="ghost" id="btn-vic-title">타이틀로</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-death" class="modal hidden">
+    <div class="panel">
+      <h2>쓰러졌습니다</h2>
+      <p id="death-text" class="help">잠시 후 지역 입구에서 다시 일어납니다.</p>
+    </div>
+  </div>
+
+  <div id="modal-levelup" class="modal hidden">
+    <div class="lv-card">
+      <div class="rays"></div>
+      <div class="kicker">성장</div>
+      <h2>레벨 업!</h2>
+      <p id="lv-num">Lv. 2</p>
+      <p id="lv-skill"></p>
+      <ul id="lv-stats"></ul>
+    </div>
+  </div>
+
+  <div id="modal-confirm" class="modal hidden">
+    <div class="panel">
+      <p id="confirm-text" class="help"></p>
+      <div class="btn-row">
+        <button type="button" class="primary" id="btn-yes">확인</button>
+        <button type="button" class="ghost" id="btn-no">취소</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="fade"></div>
+</div>
+<noscript><p style="color:#fff;padding:24px">자바스크립트를 켜야 플레이할 수 있습니다.</p></noscript>
+<script src="js/audio.js"></script>
+<script src="js/art.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
