@@ -819,7 +819,7 @@
   }
 
   function meleeBox() {
-    const reach = 18;
+    const reach = 26;
     return {
       x: player.facing > 0 ? player.x + player.w - 4 : player.x - reach,
       y: player.y + 2,
