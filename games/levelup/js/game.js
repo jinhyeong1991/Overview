@@ -819,12 +819,12 @@
   }
 
   function meleeBox() {
-    const reach = 26;
+    const reach = 22;
     return {
-      x: player.facing > 0 ? player.x + player.w - 4 : player.x - reach,
-      y: player.y + 2,
-      w: reach + 6,
-      h: player.h,
+      x: player.facing > 0 ? player.x - 2 : player.x - reach,
+      y: player.y,
+      w: player.w + reach,
+      h: player.h + 2,
     };
   }
 
@@ -1098,7 +1098,7 @@
       m.aiT = 0.85 + Math.random() * 0.5;
       m.facing = dist < 180 ? dir : (Math.random() < 0.5 ? -1 : 1);
       m.vx = m.facing * (dist < 180 ? 78 : 42);
-      if (m.onGround) m.vy = dist < 180 ? -250 : -210;
+      if (m.onGround) m.vy = dist < 180 ? -150 : -120;
     }
   }
 
@@ -2441,6 +2441,7 @@
           skills: SKILLS.map((s) => level >= s.level),
           skillCd: skillCd.slice(),
           monsters: monsters.filter((m) => !m.dead).length,
+          near: monsters.filter((m) => !m.dead).slice(0, 4).map((m) => ({ t: m.type, x: Math.round(m.x), y: Math.round(m.y), hp: m.hp })),
           kills,
           bossHp: (monsters.find((m) => m.type === "boss" && !m.dead) || {}).hp || 0,
           potions: { ...potions },
