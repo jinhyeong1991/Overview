@@ -1,6 +1,6 @@
 /* Original pixel-art sprites. No copyrighted characters or tiles. */
 (function () {
-  const OUT = [32, 22, 48, 255];
+  const OUT = [92, 48, 62, 255];
 
   function bake(w, h, draw, ax, ay) {
     const c = document.createElement("canvas");
@@ -118,161 +118,129 @@
     }
   }
 
-  const CX = 48;
-  const FEET = 86;
+  const CX = 14;
+  const FEET = 26;
 
   function drawHero(ctx, female, pose) {
     const bob = pose.bob || 0;
     const leg = pose.leg || 0;
     const lean = pose.lean || 0;
     const hairS = pose.hair || 0;
-    const skin = "#ffd2b4";
+    const skin = "#ffd8c2";
     const skinS = "#f0b090";
-    const hair = female ? "#ee5aa2" : "#3a78e0";
-    const hairD = female ? "#c43278" : "#2456b0";
-    const hairL = female ? "#ffc0e0" : "#c7e6ff";
-    const cloth = female ? "#fff7fb" : "#e23d4c";
-    const clothD = female ? "#f3c6e2" : "#b42336";
-    const clothL = female ? "#ffffff" : "#ff8d9a";
-    const accent = female ? "#7c5cff" : "#ffd56a";
-    const pants = female ? "#7c5cff" : "#2c3e86";
-    const pantsD = female ? "#5a3ed0" : "#1c2a5e";
-    const boot = female ? "#fff" : "#5a3b32";
+    const hair = female ? "#ff6eb4" : "#4c8cff";
+    const hairD = female ? "#e23d8a" : "#2a5ed0";
+    const hairL = female ? "#ffd0ea" : "#d7f0ff";
+    const cloth = female ? "#fff7fb" : "#ff5a6a";
+    const clothD = female ? "#ffc0e0" : "#d42840";
+    const clothL = female ? "#ffffff" : "#ffb0b8";
+    const accent = female ? "#8b7bff" : "#ffe08a";
+    const pants = female ? "#8b7bff" : "#3a4ea8";
+    const pantsD = female ? "#6a58e0" : "#243278";
+    const boot = female ? "#fff" : "#6a4030";
     const bootD = female ? "#ff8ab8" : "#3a241e";
-    const hip = FEET - 12;
-    const bodyTop = FEET - 24 + bob;
-    const headY = FEET - 40 + bob;
+    const hip = FEET - 6;
+    const bodyTop = FEET - 13 + bob;
+    const headY = FEET - 22 + bob;
 
     if (female) {
-      rect(ctx, CX - 8 + hairS, headY + 8, 5, 22, hairD);
-      rect(ctx, CX + 4 - hairS, headY + 10, 5, 20, hair);
-      rect(ctx, CX - 8, headY + 8, 2, 18, hairL);
-    } else {
-      rect(ctx, CX - 10, bodyTop + 4, 4, 8, "#e23d4c");
+      rect(ctx, CX - 6 + hairS, headY + 6, 2, 8, hairD);
+      rect(ctx, CX + 4 - hairS, headY + 6, 2, 8, hair);
     }
 
     if (!pose.jump) {
-      const backSwing = pose.fall ? -2 : -leg;
-      rect(ctx, CX - 7 + backSwing, hip, 5, pose.fall ? 10 : 9, pantsD);
-      rect(ctx, CX - 8 + backSwing, hip + 8, 7, 3, bootD);
+      const back = pose.fall ? -1 : -Math.sign(leg);
+      rect(ctx, CX - 4 + back, hip, 3, 5, pantsD);
+      rect(ctx, CX - 4 + back, hip + 4, 3, 2, bootD);
     }
 
-    rect(ctx, CX - 8 + lean, bodyTop + 2, 4, 8, clothD);
-
-    rect(ctx, CX - 9 + lean, bodyTop, 18, 12, cloth);
-    rect(ctx, CX - 9 + lean, bodyTop, 18, 3, clothL);
-    rect(ctx, CX - 9 + lean, bodyTop + 8, 18, 4, clothD);
+    rect(ctx, CX - 4 + lean, bodyTop, 8, 7, cloth);
+    rect(ctx, CX - 4 + lean, bodyTop, 8, 2, clothL);
+    rect(ctx, CX - 4 + lean, bodyTop + 5, 8, 2, clothD);
     if (female) {
-      rect(ctx, CX - 3 + lean, bodyTop + 3, 6, 8, accent);
-      rect(ctx, CX - 12 + lean, hip - 1, 24, 6, "#ff8ab8");
-      rect(ctx, CX - 13 + lean, hip + 3, 26, 3, "#e8649c");
-      px(ctx, CX + lean, bodyTop + 5, "#ffd56a");
+      rect(ctx, CX - 2 + lean, bodyTop + 2, 4, 4, accent);
+      rect(ctx, CX - 5 + lean, hip - 1, 10, 3, "#ff8ab8");
     } else {
-      rect(ctx, CX - 6 + lean, bodyTop + 2, 12, 3, accent);
-      rect(ctx, CX - 1 + lean, bodyTop + 5, 2, 2, "#fff3c0");
-      rect(ctx, CX + 4 + lean, bodyTop + 5, 2, 2, "#fff3c0");
-      rect(ctx, CX - 9 + lean, bodyTop + 10, 18, 3, "#f0c14a");
-      px(ctx, CX + lean, bodyTop + 11, "#fff6d0");
+      rect(ctx, CX - 3 + lean, bodyTop + 1, 6, 2, accent);
+      px(ctx, CX + lean, bodyTop + 4, "#fff6d0");
     }
 
     if (pose.jump) {
-      rect(ctx, CX - 8, hip - 1, 5, 7, pantsD);
-      rect(ctx, CX + 3, hip - 1, 5, 7, pants);
-      rect(ctx, CX - 9, hip + 5, 7, 3, boot);
-      rect(ctx, CX + 2, hip + 5, 7, 3, boot);
+      rect(ctx, CX - 4, hip - 1, 3, 4, pantsD);
+      rect(ctx, CX + 1, hip - 1, 3, 4, pants);
+      rect(ctx, CX - 4, hip + 2, 3, 2, boot);
+      rect(ctx, CX + 1, hip + 2, 3, 2, boot);
     } else {
-      const front = pose.fall ? 2 : leg;
-      rect(ctx, CX + 2 + front, hip, 5, 9, pants);
-      rect(ctx, CX + 1 + front, hip + 8, 7, 3, boot);
-      rect(ctx, CX + 1 + front, hip + 8, 7, 1, bootD);
+      const front = pose.fall ? 1 : Math.sign(leg);
+      rect(ctx, CX + 1 + front, hip, 3, 5, pants);
+      rect(ctx, CX + 1 + front, hip + 4, 3, 2, boot);
     }
 
-    fillEllipse(ctx, CX + lean, headY + 8, 11, 10, skin);
-    rect(ctx, CX - 3 + lean, headY + 16, 6, 3, skinS);
+    fillEllipse(ctx, CX + lean, headY + 5, 6, 6, skin);
+    px(ctx, CX + lean, headY + 10, skinS);
 
     if (pose.blink || pose.hurt) {
-      rect(ctx, CX - 8 + lean, headY + 8, 5, 1, "#241830");
-      rect(ctx, CX + 3 + lean, headY + 8, 5, 1, "#241830");
-      if (pose.hurt) {
-        px(ctx, CX - 8 + lean, headY + 7, "#241830");
-        px(ctx, CX - 4 + lean, headY + 9, "#241830");
-        px(ctx, CX + 3 + lean, headY + 7, "#241830");
-        px(ctx, CX + 7 + lean, headY + 9, "#241830");
-      }
+      rect(ctx, CX - 4 + lean, headY + 5, 3, 1, "#3a2430");
+      rect(ctx, CX + 1 + lean, headY + 5, 3, 1, "#3a2430");
     } else {
-      rect(ctx, CX - 8 + lean, headY + 6, 5, 5, "#fff");
-      rect(ctx, CX + 3 + lean, headY + 6, 5, 5, "#fff");
-      rect(ctx, CX - 6 + lean, headY + 7, 2, 3, "#241830");
-      rect(ctx, CX + 5 + lean, headY + 7, 2, 3, "#241830");
-      px(ctx, CX - 7 + lean, headY + 6, "#fff");
-      px(ctx, CX + 4 + lean, headY + 6, "#fff");
+      rect(ctx, CX - 4 + lean, headY + 3, 3, 3, "#fff");
+      rect(ctx, CX + 1 + lean, headY + 3, 3, 3, "#fff");
+      rect(ctx, CX - 3 + lean, headY + 4, 2, 2, "#2a2438");
+      rect(ctx, CX + 2 + lean, headY + 4, 2, 2, "#2a2438");
+      px(ctx, CX - 4 + lean, headY + 3, "#fff");
+      px(ctx, CX + 1 + lean, headY + 3, "#fff");
       if (female) {
-        rect(ctx, CX - 8 + lean, headY + 5, 5, 1, "#241830");
-        rect(ctx, CX + 3 + lean, headY + 5, 5, 1, "#241830");
+        px(ctx, CX - 4 + lean, headY + 2, "#3a2430");
+        px(ctx, CX + 3 + lean, headY + 2, "#3a2430");
       }
     }
-    px(ctx, CX - 9 + lean, headY + 12, "#ff8aa8");
-    px(ctx, CX - 8 + lean, headY + 13, "#ff8aa8");
-    px(ctx, CX + 8 + lean, headY + 12, "#ff8aa8");
-    px(ctx, CX + 9 + lean, headY + 13, "#ff8aa8");
+    px(ctx, CX - 5 + lean, headY + 7, "#ff9ab8");
+    px(ctx, CX + 4 + lean, headY + 7, "#ff9ab8");
     if (!pose.hurt) {
-      px(ctx, CX - 2 + lean, headY + 14, "#d07070");
-      px(ctx, CX - 1 + lean, headY + 15, "#d07070");
-      px(ctx, CX + lean, headY + 15, "#d07070");
-      px(ctx, CX + 1 + lean, headY + 14, "#d07070");
-    } else {
-      rect(ctx, CX - 2 + lean, headY + 14, 4, 2, "#d07070");
+      px(ctx, CX - 1 + lean, headY + 8, "#e07080");
+      px(ctx, CX + lean, headY + 8, "#e07080");
     }
 
     if (female) {
-      rect(ctx, CX - 12 + lean, headY + 1 + hairS, 24, 6, hair);
-      rect(ctx, CX - 8 + lean, headY - 1, 16, 3, hairL);
-      rect(ctx, CX - 12 + lean, headY + 5, 4, 3, hairD);
-      rect(ctx, CX + 8 + lean, headY + 5, 4, 3, hair);
-      rect(ctx, CX - 4 + lean, headY - 3, 8, 4, "#fff7fb");
-      rect(ctx, CX - 7 + lean, headY - 2, 3, 3, "#ee5aa2");
-      rect(ctx, CX + 4 + lean, headY - 2, 3, 3, "#ee5aa2");
-      px(ctx, CX + lean, headY - 2, "#ffd56a");
-      rect(ctx, CX - 14 + lean, headY + 5, 4, 14, hair);
-      rect(ctx, CX + 10 + lean, headY + 6, 4, 12, hairD);
+      rect(ctx, CX - 6 + lean, headY + hairS, 12, 4, hair);
+      rect(ctx, CX - 4 + lean, headY - 1, 8, 2, hairL);
+      rect(ctx, CX - 2 + lean, headY - 3, 4, 3, "#fff");
+      px(ctx, CX + lean, headY - 2, accent);
+      rect(ctx, CX - 7 + lean, headY + 3, 2, 6, hair);
+      rect(ctx, CX + 5 + lean, headY + 3, 2, 6, hairD);
     } else {
-      rect(ctx, CX - 12 + lean, headY, 24, 6, hair);
-      rect(ctx, CX - 8 + lean, headY - 2, 8, 3, hairL);
-      rect(ctx, CX - 14 + lean, headY - 2, 4, 6, hairD);
-      rect(ctx, CX - 6 + lean, headY - 6, 4, 6, hair);
-      rect(ctx, CX + 2 + lean, headY - 5, 5, 5, hairL);
-      rect(ctx, CX + 10 + lean, headY - 3, 4, 6, hair);
-      rect(ctx, CX - 12 + lean, headY + 5, 4, 3, hairD);
-      rect(ctx, CX + 8 + lean, headY + 5, 4, 3, hair);
-      px(ctx, CX - 2 + lean, headY, "#eaf6ff");
+      rect(ctx, CX - 6 + lean, headY - 1, 12, 4, hair);
+      rect(ctx, CX - 3 + lean, headY - 4, 3, 4, hair);
+      rect(ctx, CX + 1 + lean, headY - 3, 3, 3, hairL);
+      rect(ctx, CX - 7 + lean, headY + 1, 2, 3, hairD);
+      rect(ctx, CX + 5 + lean, headY + 1, 2, 3, hair);
+      px(ctx, CX - 1 + lean, headY, "#eaf6ff");
     }
 
-    const armY = bodyTop + 3 + (pose.cast ? -3 : (pose.arm || 0));
-    rect(ctx, CX + 8 + lean, armY, 5, pose.cast ? 6 : 8, cloth);
-    px(ctx, CX + 10 + lean, armY + (pose.cast ? 6 : 8), skin);
+    const armY = bodyTop + 1 + (pose.cast ? -2 : Math.round((pose.arm || 0) / 2));
+    rect(ctx, CX + 3 + lean, armY, 3, pose.cast ? 3 : 4, cloth);
+    px(ctx, CX + 4 + lean, armY + (pose.cast ? 3 : 4), skin);
 
     const ang = pose.sword == null ? 1.05 : pose.sword;
-    const hx = CX + 12 + lean;
-    const hy = armY + 6;
-    blade(ctx, hx, hy, ang, female ? 18 : 16, female);
+    blade(ctx, CX + 6 + lean, armY + 3, ang, 8, female);
   }
 
   function heroPoses() {
-    const idle = [0, 1, 2, 3].map((i) => ({ bob: i === 1 || i === 2 ? 1 : 0, blink: i === 3, sword: 1.08 }));
+    const idle = [0, 1, 2, 3].map((i) => ({ bob: i === 1 || i === 2 ? 1 : 0, blink: i === 3, sword: 0.15 }));
     const walk = [0, 1, 2, 3, 4, 5].map((i) => ({
       bob: i % 2 === 0 ? 1 : 0,
-      leg: [0, 2, 3, 0, -2, -3][i],
-      arm: [0, -1, -2, 0, 1, 2][i],
+      leg: [0, 1, 2, 0, -1, -2][i],
+      arm: [0, -1, 0, 0, 1, 0][i],
       hair: [0, 1, 0, -1, 0, 1][i],
-      sword: 1.02,
+      sword: 0.15,
     }));
     return {
       idle,
       walk,
-      jump: [{ jump: true, sword: 0.45, arm: -2 }],
-      fall: [{ fall: true, sword: 1.25, arm: 2 }],
-      attack: [-2.35, -1.55, -0.45, 0.45, 1.05].map((a) => ({ sword: a, attack: true, leg: 1 })),
-      hurt: [{ hurt: true, blink: true, sword: 1.35, lean: -2 }],
+      jump: [{ jump: true, sword: 0.2, arm: -1 }],
+      fall: [{ fall: true, sword: 0.35, arm: 1 }],
+      attack: [-2.2, -1.2, -0.2, 0.6, 1.1].map((a) => ({ sword: a, attack: true, leg: 1 })),
+      hurt: [{ hurt: true, blink: true, sword: 0.6, lean: -1 }],
       cast: [0, 1, 2].map((i) => ({ cast: true, sword: -1.45, hair: i - 1 })),
       dash: [0, 1, 2, 3].map((i) => ({ lean: 3, leg: [3, -2, 3, -2][i], sword: 0.2, dash: true })),
     };
@@ -291,126 +259,104 @@
     }
   }
 
+  function peep(ctx, x, y, gap) {
+    rect(ctx, x, y, 2, 2, "#fff");
+    rect(ctx, x + gap, y, 2, 2, "#fff");
+    px(ctx, x + 1, y + 1, "#2a2438");
+    px(ctx, x + gap + 1, y + 1, "#2a2438");
+  }
+
   function drawSlime(ctx, frame) {
     const squ = [0, 1, 0, -1][frame % 4];
-    const cy = 20 + (squ > 0 ? 2 : 0);
-    fillEllipse(ctx, 24, cy, 12 + squ, 9 - Math.max(0, squ), "#3aaa44");
-    fillEllipse(ctx, 24, cy - 1, 10 + squ, 7 - Math.max(0, squ), "#67d85a");
-    fillEllipse(ctx, 19, cy - 4, 4, 2, "#e9ffc8");
-    eyes(ctx, 16, cy - 2, 10, false);
-    px(ctx, 22, cy + 3, "#241830");
-    px(ctx, 23, cy + 4, "#241830");
-    px(ctx, 24, cy + 4, "#241830");
-    px(ctx, 25, cy + 3, "#241830");
-    px(ctx, 15, cy + 2, "#ff8aa8");
-    px(ctx, 31, cy + 2, "#ff8aa8");
+    const cy = 12 + (squ > 0 ? 1 : 0);
+    fillEllipse(ctx, 12, cy, 8 + squ, 6, "#3ecf6e");
+    fillEllipse(ctx, 12, cy - 1, 6, 4, "#b6ff8a");
+    fillEllipse(ctx, 9, cy - 3, 2, 1, "#f4ffe4");
+    peep(ctx, 8, cy - 2, 5);
+    px(ctx, 11, cy + 2, "#2a2438");
+    px(ctx, 12, cy + 2, "#2a2438");
+    px(ctx, 8, cy + 1, "#ff9ec4");
+    px(ctx, 16, cy + 1, "#ff9ec4");
   }
 
   function drawMushroom(ctx, frame) {
     const bob = frame % 2;
-    fillEllipse(ctx, 20, 16 + bob, 14, 9, "#b42336");
-    fillEllipse(ctx, 20, 15 + bob, 12, 7, "#e23d4c");
-    fillEllipse(ctx, 12, 13 + bob, 3, 2, "#fff6e4");
-    fillEllipse(ctx, 20, 11 + bob, 2, 2, "#fff6e4");
-    fillEllipse(ctx, 27, 14 + bob, 3, 2, "#fff6e4");
-    rect(ctx, 15, 20 + bob, 10, 12, "#ffe0b8");
-    rect(ctx, 16, 22 + bob, 8, 8, "#f6c89a");
-    eyes(ctx, 15, 22 + bob, 7, true);
-    rect(ctx, 8, 24 + bob, 6, 3, "#e0b080");
-    rect(ctx, 26, 24 + bob, 6, 3, "#e0b080");
-    rect(ctx, 14, 31 + bob, 4, 4, "#c9843a");
-    rect(ctx, 22, 31 + bob, 4, 4, "#c9843a");
+    fillEllipse(ctx, 12, 9 + bob, 9, 6, "#ff8fb0");
+    fillEllipse(ctx, 12, 8 + bob, 7, 4, "#ffd0e0");
+    fillEllipse(ctx, 7, 7 + bob, 2, 1, "#fff6e4");
+    fillEllipse(ctx, 16, 8 + bob, 2, 1, "#fff6e4");
+    rect(ctx, 9, 12 + bob, 6, 7, "#ffe6c4");
+    peep(ctx, 9, 13 + bob, 4);
+    px(ctx, 11, 16 + bob, "#e09070");
+    rect(ctx, 8, 18 + bob, 3, 2, "#e0a060");
+    rect(ctx, 13, 18 + bob, 3, 2, "#e0a060");
   }
 
   function drawWolf(ctx, frame) {
-    const leg = [0, 2, 0, -2][frame % 4];
-    fillEllipse(ctx, 10, 18, 6, 4, "#6d84a8");
-    fillEllipse(ctx, 22, 24, 12, 8, "#8aa4c8");
-    fillEllipse(ctx, 22, 26, 8, 5, "#e8eef8");
-    fillEllipse(ctx, 30, 16, 8, 7, "#8aa4c8");
-    fillEllipse(ctx, 36, 18, 5, 4, "#d5deee");
-    rect(ctx, 24, 8, 4, 6, "#6d84a8");
-    rect(ctx, 32, 8, 4, 6, "#6d84a8");
-    px(ctx, 25, 9, "#ff8aa8");
-    px(ctx, 33, 9, "#ff8aa8");
-    eyes(ctx, 28, 14, 6, true);
-    px(ctx, 38, 18, "#241830");
-    rect(ctx, 14 + leg, 30, 4, 6, "#6d84a8");
-    rect(ctx, 24 - leg, 30, 4, 6, "#5d7494");
-    rect(ctx, 13 + leg, 35, 6, 2, "#3a241e");
-    rect(ctx, 23 - leg, 35, 6, 2, "#3a241e");
+    const leg = [0, 1, 0, -1][frame % 4];
+    fillEllipse(ctx, 6, 12, 4, 3, "#8eb0d8");
+    fillEllipse(ctx, 14, 14, 8, 5, "#b7d4f5");
+    fillEllipse(ctx, 14, 15, 5, 3, "#fff");
+    fillEllipse(ctx, 20, 10, 5, 4, "#9ec0e8");
+    rect(ctx, 16, 5, 2, 4, "#7aa0d0");
+    rect(ctx, 21, 5, 2, 4, "#7aa0d0");
+    peep(ctx, 18, 9, 3);
+    px(ctx, 24, 11, "#2a2438");
+    rect(ctx, 8 + leg, 17, 3, 4, "#7aa0d0");
+    rect(ctx, 16 - leg, 17, 3, 4, "#6888b4");
   }
 
   function drawBat(ctx, frame) {
-    const flap = [8, 4, 8, 12][frame % 4];
-    fillEllipse(ctx, 8, 16, 10, flap, "#5a3ca8");
-    fillEllipse(ctx, 40, 16, 10, flap, "#5a3ca8");
-    fillEllipse(ctx, 10, 16, 6, Math.max(3, flap - 3), "#c9b6ff");
-    fillEllipse(ctx, 38, 16, 6, Math.max(3, flap - 3), "#c9b6ff");
-    fillEllipse(ctx, 24, 16, 8, 7, "#7a5cc8");
-    rect(ctx, 16, 8, 3, 6, "#5a3ca8");
-    rect(ctx, 29, 8, 3, 6, "#5a3ca8");
-    eyes(ctx, 19, 14, 7, true);
-    px(ctx, 22, 20, "#fff");
-    px(ctx, 26, 20, "#fff");
+    const flap = [4, 2, 4, 6][frame % 4];
+    fillEllipse(ctx, 5, 10, 6, flap, "#b9a0ff");
+    fillEllipse(ctx, 21, 10, 6, flap, "#b9a0ff");
+    fillEllipse(ctx, 13, 10, 5, 4, "#7d62e0");
+    rect(ctx, 9, 6, 2, 3, "#5a42b0");
+    rect(ctx, 15, 6, 2, 3, "#5a42b0");
+    peep(ctx, 10, 9, 4);
   }
 
   function drawGolem(ctx, frame) {
     const arm = [0, 1, 0, -1][frame % 4];
-    fillEllipse(ctx, 28, 28, 14, 12, "#5c5868");
-    fillEllipse(ctx, 28, 26, 12, 10, "#8d8a9a");
-    rect(ctx, 16, 16, 24, 10, "#7e7b8c");
-    rect(ctx, 20, 8, 16, 12, "#8d8a9a");
-    rect(ctx, 24, 2, 8, 8, "#7ee0ff");
-    rect(ctx, 26, 4, 4, 4, "#e8fbff");
-    eyes(ctx, 22, 12, 8, true);
-    rect(ctx, 8, 18 + arm, 8, 12, "#6c697a");
-    rect(ctx, 40, 18 - arm, 8, 12, "#6c697a");
-    rect(ctx, 18, 36, 6, 8, "#5c5868");
-    rect(ctx, 30, 36, 6, 8, "#5c5868");
-    px(ctx, 18, 22, "#6db85a");
-    px(ctx, 34, 30, "#6db85a");
-    px(ctx, 26, 24, "#6db85a");
+    fillEllipse(ctx, 12, 16, 8, 6, "#8d8aa0");
+    rect(ctx, 8, 6, 8, 8, "#c8c4d8");
+    rect(ctx, 10, 2, 4, 5, "#7ee8ff");
+    peep(ctx, 9, 8, 4);
+    rect(ctx, 3, 10 + arm, 4, 6, "#6e6a80");
+    rect(ctx, 17, 10 - arm, 4, 6, "#6e6a80");
+    rect(ctx, 8, 20, 3, 4, "#5c5868");
+    rect(ctx, 13, 20, 3, 4, "#5c5868");
+    px(ctx, 7, 14, "#8ee07a");
   }
 
   function drawImp(ctx, frame) {
     const bob = frame % 2;
-    fillEllipse(ctx, 16, 24 + bob, 8, 10, "#e25822");
-    fillEllipse(ctx, 16, 18 + bob, 7, 8, "#ff7a3a");
-    fillEllipse(ctx, 16, 12 + bob, 5, 6, "#ffd05a");
-    fillEllipse(ctx, 14, 10 + bob, 2, 2, "#fff6d0");
-    rect(ctx, 10, 8 + bob, 3, 6, "#5a2a6a");
-    rect(ctx, 19, 8 + bob, 3, 6, "#5a2a6a");
-    eyes(ctx, 11, 16 + bob, 6, true);
-    px(ctx, 15, 22 + bob, "#fff");
+    fillEllipse(ctx, 8, 14 + bob, 5, 6, "#ff7a4a");
+    fillEllipse(ctx, 8, 8 + bob, 4, 4, "#ffd36a");
+    rect(ctx, 5, 5 + bob, 2, 3, "#7a4ad0");
+    rect(ctx, 10, 5 + bob, 2, 3, "#7a4ad0");
+    peep(ctx, 6, 12 + bob, 3);
+    px(ctx, 8, 15 + bob, "#fff");
   }
 
   function drawBoss(ctx, mode, frame) {
     const bob = frame % 2;
-    fillEllipse(ctx, 40, 70, 18, 8, "#1a1028");
-    rect(ctx, 18, 28, 44, 40, "#241838");
-    fillEllipse(ctx, 40, 36 + bob, 16, 14, "#3a2a6a");
-    rect(ctx, 28, 18 + bob, 24, 20, "#3a2a6a");
-    rect(ctx, 30, 8 + bob, 20, 16, "#2a1c4e");
-    rect(ctx, 22, 4 + bob, 6, 14, "#ffd56a");
-    rect(ctx, 52, 4 + bob, 6, 14, "#ffd56a");
-    rect(ctx, 34, 14 + bob, 6, 4, "#ff3a4a");
-    rect(ctx, 46, 14 + bob, 6, 4, "#ff3a4a");
-    px(ctx, 35, 15 + bob, "#fff");
-    px(ctx, 47, 15 + bob, "#fff");
-    rect(ctx, 36, 22 + bob, 8, 3, "#1a1028");
-    rect(ctx, 12, 32 + bob, 12, 10, "#ffc857");
-    rect(ctx, 56, 32 + bob, 12, 10, "#ffc857");
-    rect(ctx, 24, 64, 10, 16, "#2a1c4e");
-    rect(ctx, 46, 64, 10, 16, "#2a1c4e");
-    rect(ctx, 22, 78, 14, 4, "#111");
-    rect(ctx, 44, 78, 14, 4, "#111");
-    rect(ctx, 34, 40, 12, 16, "#ffc857");
-    rect(ctx, 38, 44, 4, 8, "#fff1b0");
-    const ang = mode === "slam" ? -1.5 : mode === "attack" ? 0.3 + frame * 0.4 : 0.8;
-    const hx = mode === "slam" ? 40 : 62;
-    const hy = mode === "slam" ? 20 : 40;
-    blade(ctx, hx, hy + bob, ang, 26, false);
+    rect(ctx, 10, 16, 20, 18, "#3a2460");
+    fillEllipse(ctx, 20, 18 + bob, 9, 8, "#6a4ad0");
+    rect(ctx, 14, 8 + bob, 12, 10, "#2a1848");
+    rect(ctx, 12, 4 + bob, 3, 8, "#ffe08a");
+    rect(ctx, 25, 4 + bob, 3, 8, "#ffe08a");
+    rect(ctx, 16, 12 + bob, 3, 2, "#ff5a6a");
+    rect(ctx, 22, 12 + bob, 3, 2, "#ff5a6a");
+    px(ctx, 17, 12 + bob, "#fff");
+    px(ctx, 23, 12 + bob, "#fff");
+    rect(ctx, 4, 18 + bob, 6, 5, "#ffc857");
+    rect(ctx, 30, 18 + bob, 6, 5, "#ffc857");
+    rect(ctx, 14, 32, 4, 6, "#241838");
+    rect(ctx, 22, 32, 4, 6, "#241838");
+    rect(ctx, 16, 22, 8, 8, "#ffe08a");
+    const ang = mode === "slam" ? -1.4 : mode === "attack" ? 0.2 + frame * 0.35 : 0.7;
+    blade(ctx, mode === "slam" ? 20 : 30, (mode === "slam" ? 12 : 20) + bob, ang, 12, false);
   }
 
   function drawTree(ctx, v) {

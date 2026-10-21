@@ -22,13 +22,13 @@
   };
 
   const BESTIARY = {
-    slime: { name: "말랑 슬라임", hp: 22, atk: 6, exp: 20, gold: 5, w: 20, h: 16, speed: 40 },
-    mushroom: { name: "뿔버섯", hp: 40, atk: 11, exp: 28, gold: 8, w: 20, h: 24, speed: 34 },
-    wolf: { name: "숲늑대", hp: 54, atk: 14, exp: 36, gold: 11, w: 26, h: 22, speed: 36, run: 128 },
-    bat: { name: "밤박쥐", hp: 32, atk: 12, exp: 32, gold: 9, w: 28, h: 18, flying: true },
-    golem: { name: "돌골렘", hp: 96, atk: 18, exp: 58, gold: 18, w: 28, h: 32, speed: 28 },
-    imp: { name: "불꽃정령", hp: 44, atk: 15, exp: 46, gold: 13, w: 18, h: 22, flying: true },
-    boss: { name: "네로스", hp: 480, atk: 20, exp: 360, gold: 160, w: 44, h: 56, speed: 50 },
+    slime: { name: "말랑 슬라임", hp: 22, atk: 6, exp: 20, gold: 5, w: 14, h: 12, speed: 40 },
+    mushroom: { name: "포자버섯", hp: 40, atk: 11, exp: 28, gold: 8, w: 14, h: 16, speed: 34 },
+    wolf: { name: "숲늑대", hp: 54, atk: 14, exp: 36, gold: 11, w: 18, h: 14, speed: 36, run: 128 },
+    bat: { name: "밤박쥐", hp: 32, atk: 12, exp: 32, gold: 9, w: 18, h: 12, flying: true },
+    golem: { name: "돌골렘", hp: 96, atk: 18, exp: 58, gold: 18, w: 18, h: 20, speed: 28 },
+    imp: { name: "불꽃정령", hp: 44, atk: 15, exp: 46, gold: 13, w: 12, h: 14, flying: true },
+    boss: { name: "네로스", hp: 480, atk: 20, exp: 360, gold: 160, w: 26, h: 32, speed: 50 },
   };
 
   const STAGE_MUL = [
@@ -55,6 +55,11 @@
       enter: "푸른 초원에 도착했습니다",
       goal: "포탈을 찾아 다음 지역으로 가세요",
       shopX: 130, chestX: 1960, portalX: 2020,
+      ladders: [
+        { x: 300, y: GROUND - 48, w: 8, h: 48 },
+        { x: 700, y: GROUND - 46, w: 8, h: 46 },
+        { x: 1140, y: GROUND - 110, w: 8, h: 64 },
+      ],
       platforms: [
         P(0, GROUND, 2100, 110, "grass"),
         P(280, GROUND - 48, 120, 12, "grass", true),
@@ -144,7 +149,7 @@
 
   const keys = {};
   const held = { attack: false, jump: false };
-  const joy = { active: false, id: null, x: 0 };
+  const joy = { active: false, id: null, x: 0, y: 0 };
 
   let cssW = 800, cssH = 400, dpr = 1, viewW = 400, viewH = 200;
   let mode = "title";
@@ -275,7 +280,7 @@
   function makePlayer() {
     const h = hero();
     player = {
-      x: 56, y: 0, w: 18, h: 34, vx: 0, vy: 0,
+      x: 56, y: 0, w: 12, h: 20, vx: 0, vy: 0,
       facing: 1, onGround: false, coyote: 0, jumpCut: false,
       state: "idle", stateT: 0, hp: 1, mp: 1, hpMax: 1, mpMax: 1, atk: 1, speed: h.speed,
       atkCd: 0, atkDur: h.atkDur, invuln: 0, controlLock: 0, sinceHit: 10,
@@ -436,6 +441,7 @@
       goal: def.goal, boss: !!def.boss,
       platforms: def.platforms, lava: def.lava || [],
       portalX: def.portalX || 0, shopX: def.shopX || 0, chestX: def.chestX || 0,
+      ladders: def.ladders || [],
       cache: buildCache(def, decor),
     };
     monsters = def.spawns.map(([t, x]) => spawnMonster(t, x));
@@ -487,6 +493,22 @@
     if (keys.ArrowLeft || keys.KeyA) x -= 1;
     if (keys.ArrowRight || keys.KeyD) x += 1;
     return x;
+  }
+  function axisY() {
+    if (joy.active) {
+      const v = joy.y || 0;
+      return Math.abs(v) < 0.22 ? 0 : v;
+    }
+    let y = 0;
+    if (keys.ArrowUp || keys.KeyW) y -= 1;
+    if (keys.ArrowDown || keys.KeyS) y += 1;
+    return y;
+  }
+  function ladderHere() {
+    if (!map || !player) return null;
+    const cx = player.x + player.w / 2;
+    const feet = player.y + player.h;
+    return (map.ladders || []).find((l) => cx > l.x - 2 && cx < l.x + l.w + 2 && feet > l.y + 2 && player.y < l.y + l.h) || null;
   }
   function attackHeld() { return held.attack || keys.KeyJ || keys.KeyZ; }
   function jumpHeld() { return held.jump || keys.Space || keys.ArrowUp || keys.KeyW || keys.KeyK; }
@@ -653,10 +675,11 @@
     spawnFloater(m.x + m.w / 2, m.y, String(dmg), crit ? "#ffd24a" : "#ffffff");
     if (crit) spawnFloater(m.x + m.w / 2, m.y - 12, "치명타", "#ff9a3c");
     hitstop = Math.max(hitstop, opts.noStop ? 0 : 0.03);
-    shake = Math.min(1, shake + 0.16);
+    shake = Math.min(1.2, shake + 0.55);
     Audio().sfx("hit");
     registerCombo();
-    burst(m.x + m.w / 2, m.y + m.h * 0.4, 6, "#fff6e4", 90, 0.3);
+    burst(m.x + m.w / 2, m.y + m.h * 0.4, 14, crit ? "#ffe08a" : "#fff6e4", 140, 0.35);
+    burst(m.x + m.w / 2, m.y + m.h * 0.3, 6, "#fff", 80, 0.25);
     if (m.hp <= 0) killMonster(m);
   }
 
@@ -796,12 +819,12 @@
   }
 
   function meleeBox() {
-    const reach = 40;
+    const reach = 22;
     return {
-      x: player.facing > 0 ? player.x + player.w - 4 : player.x - reach,
-      y: player.y + 2,
-      w: reach + 6,
-      h: player.h,
+      x: player.facing > 0 ? player.x - 2 : player.x - reach,
+      y: player.y,
+      w: player.w + reach,
+      h: player.h + 2,
     };
   }
 
@@ -860,7 +883,7 @@
   }
 
   function spawnFloater(x, y, text, color) {
-    floaters.push({ x, y, vy: -32, text, color, life: 0.75 });
+    floaters.push({ x, y, vy: -46, text, color, life: 0.95 });
     if (floaters.length > 40) floaters.shift();
   }
 
@@ -964,14 +987,25 @@
       if (player.onGround && Math.abs(ax) < 0.1) player.vx *= Math.max(0, 1 - dt * 10);
     }
 
-    if (!jumpHeld() && player.vy < 0 && !player.jumpCut && player.state !== "hurt") {
+    const lad = ladderHere();
+    const ay = axisY();
+    const climbing = !!(lad && Math.abs(ay) > 0.28 && !["dash", "nova", "spin", "hurt", "attack"].includes(player.state));
+    if (climbing) {
+      player.vy = ay * 70;
+      player.vx = ax * 32;
+      player.onGround = false;
+      player.state = "walk";
+      player.x = lad.x + lad.w / 2 - player.w / 2;
+    }
+
+    if (!climbing && !jumpHeld() && player.vy < 0 && !player.jumpCut && player.state !== "hurt") {
       player.vy *= 0.7;
       player.jumpCut = true;
     }
 
     const wasGround = player.onGround;
     const prevVy = player.vy;
-    moveActor(player, dt, true);
+    moveActor(player, dt, !climbing);
     if (!wasGround && player.onGround && prevVy > 180) {
       Audio().sfx("land");
       burst(player.x + player.w / 2, player.y + player.h, 4, "#e7d2b0", 30, 0.2);
@@ -1064,7 +1098,7 @@
       m.aiT = 0.85 + Math.random() * 0.5;
       m.facing = dist < 180 ? dir : (Math.random() < 0.5 ? -1 : 1);
       m.vx = m.facing * (dist < 180 ? 78 : 42);
-      if (m.onGround) m.vy = dist < 180 ? -250 : -210;
+      if (m.onGround) m.vy = dist < 180 ? -150 : -120;
     }
   }
 
@@ -1545,12 +1579,19 @@
       const h = 16 + Math.abs(Math.sin(wx * 0.03 + 2)) * 26;
       octx.fillRect(x, Math.floor(viewH * 0.58 - h), 3, h + 30);
     }
+    octx.fillStyle = "#7ed36a";
+    for (let i = 0; i < 8; i++) {
+      const x = ((i * 90 - scroll * 0.65) % (viewW + 40) + viewW + 40) % (viewW + 40) - 20;
+      const base = Math.floor(viewH * 0.62);
+      octx.fillRect(x + 6, base - 10, 3, 12);
+      fillEllipse(octx, x + 7, base - 14, 8, 6, i % 2 ? "#8ee07a" : "#3ea84a");
+    }
   }
 
   function renderWorld() {
     const th = theme();
-    const shx = shake > 0.03 ? (Math.random() - 0.5) * shake * 6 : 0;
-    const shy = shake > 0.03 ? (Math.random() - 0.5) * shake * 4 : 0;
+    const shx = shake > 0.03 ? (Math.random() - 0.5) * shake * 12 : 0;
+    const shy = shake > 0.03 ? (Math.random() - 0.5) * shake * 8 : 0;
     drawCamX = Math.round(camX + shx);
     drawCamY = Math.round(camY + shy);
     drawSky(th);
@@ -1563,6 +1604,15 @@
       octx.globalAlpha = 1;
     }
     octx.drawImage(map.cache, -drawCamX, -drawCamY);
+    (map.ladders || []).forEach((l) => {
+      const x = Math.round(l.x - drawCamX);
+      const y = Math.round(l.y - drawCamY);
+      octx.fillStyle = "#c9844a";
+      octx.fillRect(x, y, 2, l.h);
+      octx.fillRect(x + 6, y, 2, l.h);
+      octx.fillStyle = "#ffe08a";
+      for (let i = 3; i < l.h; i += 5) octx.fillRect(x, y + i, 8, 2);
+    });
     map.lava.forEach((l) => {
       const x = Math.round(l.x - drawCamX);
       const y = Math.round(l.y - drawCamY);
@@ -1778,9 +1828,9 @@
   function renderFloaters() {
     vctx.save();
     vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    vctx.font = '800 15px "Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+    vctx.font = '900 26px "Apple SD Gothic Neo","Noto Sans KR",sans-serif';
     vctx.textAlign = "center";
-    vctx.lineWidth = 3;
+    vctx.lineWidth = 4;
     floaters.forEach((f) => {
       const x = (f.x - drawCamX) / viewW * cssW;
       const y = (f.y - drawCamY) / viewH * cssH;
@@ -1834,9 +1884,9 @@
       const g = c.getContext("2d");
       g.imageSmoothingEnabled = false;
       g.clearRect(0, 0, c.width, c.height);
-      const spr = Art().getHero(gender, "idle", (titleT * 4) % 4 | 0);
-      const sc = 2;
-      g.drawImage(spr.img, (c.width - spr.img.width * sc) / 2, c.height - spr.img.height * sc - 4, spr.img.width * sc, spr.img.height * sc);
+      const spr = Art().getHero(gender, (titleT % 2 < 1 ? "idle" : "walk"), (titleT * 8) % 6 | 0);
+      const sc = Math.min(4, Math.floor(120 / spr.img.height));
+      g.drawImage(spr.img, (c.width - spr.img.width * sc) / 2, c.height - spr.img.height * sc - 6, spr.img.width * sc, spr.img.height * sc);
     });
   }
 
@@ -1844,7 +1894,8 @@
     pctx.imageSmoothingEnabled = false;
     pctx.clearRect(0, 0, 48, 48);
     const spr = Art().getHero(heroId, "idle", (animClock * 4) % 4 | 0);
-    pctx.drawImage(spr.img, spr.ax - 22, spr.ay - 46, 44, 48, 2, 0, 44, 48);
+    const sc = Math.min(44 / spr.img.width, 46 / spr.img.height);
+    pctx.drawImage(spr.img, (48 - spr.img.width * sc) / 2, 48 - spr.img.height * sc, spr.img.width * sc, spr.img.height * sc);
   }
 
   function syncHud() {
@@ -1914,9 +1965,10 @@
     const prevH = viewH;
     view.width = Math.round(cssW * dpr);
     view.height = Math.round(cssH * dpr);
-    const scale = Math.max(1, Math.round(cssH / 208));
-    viewW = Math.max(180, Math.round(cssW / scale));
-    viewH = Math.max(120, Math.round(cssH / scale));
+    // A ~28px chibi fills about 1/9.5 of the screen, so the map reads wide.
+    const frac = 0.105;
+    viewH = Math.max(200, Math.round(28 / frac));
+    viewW = Math.max(320, Math.round(viewH * (cssW / Math.max(1, cssH))));
     off.width = viewW;
     off.height = viewH;
     if (prevW && (Math.abs(viewW - prevW) > 12 || Math.abs(viewH - prevH) > 12)) snapCam = true;
@@ -2153,6 +2205,7 @@
     joy.active = false;
     joy.id = null;
     joy.x = 0;
+    joy.y = 0;
     knobHome();
   }
 
@@ -2177,7 +2230,16 @@
   }
 
   function bindUI() {
-    document.addEventListener("pointerdown", () => Audio().unlock(), { passive: true });
+    document.addEventListener("pointerdown", () => {
+      Audio().unlock();
+      const el = document.documentElement;
+      const req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req && !document.fullscreenElement && !document.webkitFullscreenElement) {
+        Promise.resolve(req.call(el)).catch(() => {});
+      }
+    }, { passive: true });
+    window.addEventListener("gesturestart", (e) => e.preventDefault());
+    document.addEventListener("selectstart", (e) => e.preventDefault());
     document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", (e) => {
@@ -2251,7 +2313,7 @@
     joyEl.addEventListener("pointermove", (e) => { if (e.pointerId === joy.id) moveJoy(e); });
     const endJoy = (e) => {
       if (e.pointerId !== joy.id && joy.id !== null) return;
-      joy.active = false; joy.id = null; joy.x = 0;
+      joy.active = false; joy.id = null; joy.x = 0; joy.y = 0;
       knobHome();
     };
     joyEl.addEventListener("pointerup", endJoy);
@@ -2269,6 +2331,7 @@
     const len = Math.hypot(dx, dy) || 1;
     if (len > max) { dx = dx / len * max; dy = dy / len * max; }
     joy.x = dx / max;
+    joy.y = dy / max;
     const knob = $("knob");
     const home = Math.max(0, (rect.width - knob.offsetWidth) / 2);
     knob.style.left = (home + dx * 0.72) + "px";
@@ -2378,6 +2441,7 @@
           skills: SKILLS.map((s) => level >= s.level),
           skillCd: skillCd.slice(),
           monsters: monsters.filter((m) => !m.dead).length,
+          near: monsters.filter((m) => !m.dead).slice(0, 4).map((m) => ({ t: m.type, x: Math.round(m.x), y: Math.round(m.y), hp: m.hp })),
           kills,
           bossHp: (monsters.find((m) => m.type === "boss" && !m.dead) || {}).hp || 0,
           potions: { ...potions },

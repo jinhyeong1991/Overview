@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#1b1440">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -56,33 +56,34 @@
     </div>
     <div class="joystick" id="joy" aria-label="이동 스틱"><div id="knob"></div></div>
     <div class="actions">
-      <div class="skill-row">
-        <button type="button" class="skill" id="skill-0" aria-label="검기"><span class="nm">검기</span><span class="sub">Lv3</span></button>
-        <button type="button" class="skill" id="skill-1" aria-label="질풍참"><span class="nm">질풍</span><span class="sub">Lv6</span></button>
-        <button type="button" class="skill" id="skill-2" aria-label="회오리"><span class="nm">회오</span><span class="sub">Lv10</span></button>
-        <button type="button" class="skill" id="skill-3" aria-label="성광파"><span class="nm">성광</span><span class="sub">Lv15</span></button>
-      </div>
-      <div class="main-row">
-        <button type="button" id="btn-jump">점프</button>
-        <button type="button" id="btn-attack">공격</button>
-      </div>
+      <button type="button" class="skill" id="skill-3" aria-label="성광파"><span class="nm">성광</span><span class="sub">15</span></button>
+      <button type="button" class="skill" id="skill-2" aria-label="회오리"><span class="nm">회오</span><span class="sub">10</span></button>
+      <button type="button" class="skill" id="skill-1" aria-label="질풍참"><span class="nm">질풍</span><span class="sub">6</span></button>
+      <button type="button" class="skill" id="skill-0" aria-label="검기"><span class="nm">검기</span><span class="sub">3</span></button>
+      <button type="button" id="btn-jump">점프</button>
+      <button type="button" id="btn-attack">공격</button>
     </div>
     <button type="button" id="btn-interact" class="hidden">입장</button>
   </div>
 
+  <div id="rotate" aria-hidden="true">
+    <div class="rotate-phone"></div>
+    <p>휴대폰을 가로로 돌려 주세요</p>
+  </div>
+
   <section id="screen-title" class="screen">
-    <div class="panel">
+    <div class="title-top">
       <h1 class="logo">루미나</h1>
       <p class="subtitle">별빛 레벨업 모험</p>
       <p id="save-summary" class="help"></p>
-      <div class="btn-col">
-        <button type="button" class="primary" id="btn-start">모험 시작</button>
+    </div>
+    <div class="title-bottom">
+      <button type="button" class="touch-start" id="btn-start">터치하여 시작</button>
+      <div class="btn-row">
         <button type="button" class="primary hidden" id="btn-continue">이어하기</button>
         <button type="button" class="ghost hidden" id="btn-new">새 게임</button>
         <button type="button" class="ghost" id="btn-title-mute">소리 켜짐</button>
       </div>
-      <p class="help">이동 · 점프 · 공격 · 스킬. 몬스터를 쓰러뜨리면 경험치와 골드를 얻습니다.</p>
-      <p class="fine">진행은 이 기기에 저장됩니다. 키보드: 방향키, J 공격, Space 점프, 1~4 스킬</p>
     </div>
   </section>
 
@@ -94,13 +95,13 @@
           <canvas id="pick-male" width="160" height="140"></canvas>
           <h3>카이</h3>
           <div class="role">푸른 검사</div>
-          <p>체력이 높고 베기가 묵직합니다.<br>체력 ★★★★☆ · 공격 ★★★★☆</p>
+          <p>체력 ★★★★ · 공격 ★★★★</p>
         </button>
         <button type="button" class="hero-card female" id="btn-pick-female">
           <canvas id="pick-female" width="160" height="140"></canvas>
           <h3>리아</h3>
           <div class="role">새벽 검사</div>
-          <p>발이 빠르고 마나가 풍부합니다.<br>민첩 ★★★★☆ · 마나 ★★★★☆</p>
+          <p>민첩 ★★★★ · 마나 ★★★★</p>
         </button>
       </div>
       <div class="btn-row" style="margin-top:10px">
